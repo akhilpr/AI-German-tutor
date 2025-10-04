@@ -1,0 +1,7 @@
+{
+  "name": "German Language Speaking Tutor",
+  "description": "An AI-powered application to help users practice and improve their German speaking skills through real-time conversation, personalized feedback, and progress tracking.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>German Speaking Tutor AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.1"
+  }
+}
+</script>
+<style>
+  body {
+    background-color: #111111;
+    color: #f0f0f0;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.3), transparent 40%),
+                radial-gradient(circle at 80% 90%, rgba(218, 112, 214, 0.3), transparent 40%);
+    animation: gradient-animation 20s ease infinite;
+    z-index: -1;
+  }
+
+  @keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem; /* 24px */
+  }
+
+  .waveform-container {
+      width: 250px;
+      height: 100px;
+  }
+
+  .wave-group {
+      transform-origin: center;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: scaleY(0.3); /* Idle state */
+  }
+
+  .waveform-container.listening .wave-group {
+      transform: scaleY(1.0);
+  }
+
+  .waveform-container.speaking .wave-group {
+      transform: scaleY(0.6);
+  }
+
+  .wave {
+      stroke-linecap: round;
+      fill: none;
+      animation-name: flow;
+      animation-duration: 10s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+  }
+
+  @keyframes flow {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+  }
+
+  /* Listening state colors */
+  .waveform-container.listening .wave1 { stroke: #f472b6; }
+  .waveform-container.listening .wave2 { stroke: #c084fc; }
+  .waveform-container.listening .wave3 { stroke: #ec4899; }
+  
+  /* Speaking state colors */
+  .waveform-container.speaking .wave1 { stroke: #818cf8; }
+  .waveform-container.speaking .wave2 { stroke: #a855f7; }
+  .waveform-container.speaking .wave3 { stroke: #6366f1; }
+
+  /* Base wave styles */
+  .wave1 {
+      stroke: #6b7280;
+      stroke-width: 3;
+      animation-duration: 5s;
+  }
+  .wave2 {
+      stroke: #9ca3af;
+      stroke-width: 4;
+      stroke-opacity: 0.7;
+      animation-duration: 7s;
+      animation-direction: reverse;
+  }
+  .wave3 {
+      stroke: #4b5563;
+      stroke-width: 3;
+      animation-duration: 9s;
+  }
+
+</style>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
