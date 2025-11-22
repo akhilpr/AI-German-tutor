@@ -473,44 +473,43 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
   if (!selectedScenario) {
       return (
           <div className="flex flex-col h-full overflow-y-auto pb-28">
-              <div className="pt-8 px-6 pb-4 max-w-4xl mx-auto w-full">
-                  <div className="mb-6 flex flex-wrap justify-between items-start gap-4">
+              <div className="pt-6 px-4 pb-4 max-w-4xl mx-auto w-full">
+                  <div className="mb-6 flex flex-row justify-between items-center gap-4">
                     <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-900/30 px-3 py-1 rounded-lg border border-blue-500/30">
-                            Track: {user.track.charAt(0).toUpperCase() + user.track.slice(1)}
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-900/30 px-2 py-1 rounded-lg border border-blue-500/30">
+                            {user.track.charAt(0).toUpperCase() + user.track.slice(1)} Track
                         </span>
-                        <h1 className="text-2xl font-bold text-white mt-2">Training Modules</h1>
-                        <p className="text-gray-400">Select a scenario to practice.</p>
+                        <h1 className="text-xl font-bold text-white mt-1">Training</h1>
                     </div>
-                    <button onClick={onLogout} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-red-400 transition-all">
-                        <LogoutIcon className="w-4 h-4" />
-                        <span>Log Out</span>
+                    <button onClick={onLogout} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full text-xs font-medium text-gray-300 hover:text-red-400 transition-all">
+                        <LogoutIcon className="w-3 h-3" />
                     </button>
                   </div>
                   
                   {/* Quick Start Section (Casual & Exam) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                       {/* CASUAL CHAT CARD */}
-                      <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg p-1">
+                      <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg p-0.5">
                           <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="relative bg-[#121212] rounded-[1.8rem] p-6 h-full flex flex-col justify-between">
-                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
-                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg flex-shrink-0">
-                                            <div className="text-2xl">☕</div>
+                          <div className="relative bg-[#121212] rounded-[1.4rem] p-5 h-full flex flex-col justify-between">
+                                <div className="flex flex-col gap-4 mb-4">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                                            <div className="text-xl">☕</div>
                                         </div>
                                         <div className="text-left">
-                                            <h3 className="text-lg font-bold text-white">Casual Chat</h3>
-                                            <p className="text-xs text-gray-400">Just talk. No pressure.</p>
+                                            <h3 className="text-base font-bold text-white">Casual Chat</h3>
+                                            <p className="text-[10px] text-gray-400">Practice freely.</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+                                    {/* Level Selector - Touch Friendly */}
+                                    <div className="flex flex-wrap gap-2 bg-black/30 p-2 rounded-xl border border-white/10 justify-center sm:justify-start">
                                         {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
                                             <button 
                                                 key={lvl}
                                                 onClick={() => setCasualLevel(lvl)}
-                                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${casualLevel === lvl ? 'bg-pink-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                                className={`min-w-[2.5rem] h-10 rounded-lg text-sm font-bold transition-all active:scale-95 ${casualLevel === lvl ? 'bg-pink-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 hover:text-gray-200 border border-white/5'}`}
                                             >
                                                 {lvl}
                                             </button>
@@ -519,34 +518,35 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                                 </div>
                                 <button 
                                     onClick={handleStartCasualChat}
-                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-pink-300 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2"
+                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-pink-300 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2 active:scale-[0.98]"
                                 >
-                                    Start Conversation
+                                    Start Chat
                                 </button>
                           </div>
                       </div>
 
                       {/* EXAM GENERATOR CARD */}
-                      <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-600 to-orange-700 shadow-lg p-1">
+                      <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-amber-600 to-orange-700 shadow-lg p-0.5">
                           <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="relative bg-[#121212] rounded-[1.8rem] p-6 h-full flex flex-col justify-between">
-                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
-                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                                            {isGeneratingExam ? <div className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5"></div> : <SparklesIcon className="w-6 h-6 text-white" />}
+                          <div className="relative bg-[#121212] rounded-[1.4rem] p-5 h-full flex flex-col justify-between">
+                                <div className="flex flex-col gap-4 mb-4">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                                            {isGeneratingExam ? <div className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></div> : <SparklesIcon className="w-5 h-5 text-white" />}
                                         </div>
                                         <div className="text-left">
-                                            <h3 className="text-lg font-bold text-white">Exam Simulator</h3>
-                                            <p className="text-xs text-gray-400">Dynamic exam topics.</p>
+                                            <h3 className="text-base font-bold text-white">Exam Simulator</h3>
+                                            <p className="text-[10px] text-gray-400">Dynamic topics.</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+                                    {/* Level Selector - Touch Friendly */}
+                                    <div className="flex flex-wrap gap-2 bg-black/30 p-2 rounded-xl border border-white/10 justify-center sm:justify-start">
                                         {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
                                             <button 
                                                 key={lvl}
                                                 onClick={() => setExamLevel(lvl)}
-                                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${examLevel === lvl ? 'bg-amber-500 text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                                className={`min-w-[2.5rem] h-10 rounded-lg text-sm font-bold transition-all active:scale-95 ${examLevel === lvl ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 hover:text-gray-200 border border-white/5'}`}
                                             >
                                                 {lvl}
                                             </button>
@@ -557,33 +557,33 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                                 <button 
                                     onClick={handleGenerateExam}
                                     disabled={isGeneratingExam}
-                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-amber-400 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2"
+                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-amber-400 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2 active:scale-[0.98]"
                                 >
-                                    Generate Topic & Start
+                                    Generate & Start
                                 </button>
                           </div>
                       </div>
                   </div>
 
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Roleplay Scenarios</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Scenarios</h3>
+                  <div className="flex flex-col gap-3 pb-6">
                       {filteredScenarios.map((scenario) => (
                           <button
                             key={scenario.id}
                             onClick={() => setSelectedScenario(scenario)}
-                            className={`group relative overflow-hidden p-6 rounded-[2rem] bg-white/5 border transition-all duration-300 text-left hover:scale-[1.02] active:scale-95 shadow-lg ${scenario.isExamPrep ? 'border-yellow-500/50 bg-yellow-500/5' : 'border-white/5 hover:border-white/20'}`}
+                            className={`group relative overflow-hidden p-5 rounded-[1.5rem] bg-white/5 border transition-all duration-300 text-left hover:scale-[1.01] active:scale-[0.98] shadow-lg ${scenario.isExamPrep ? 'border-yellow-500/50 bg-yellow-500/5' : 'border-white/5 hover:border-white/20'}`}
                           >
                               <div className={`absolute inset-0 bg-gradient-to-br ${scenario.colorFrom} ${scenario.colorTo} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-                              <div className="relative z-10">
-                                  <div className="flex justify-between items-start mb-4">
-                                      <span className="text-4xl">{scenario.emoji}</span>
-                                      <div className="flex gap-2">
-                                          {scenario.isExamPrep && <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full uppercase ${scenario.id === 'nurse_job_interview' ? 'bg-blue-500 text-white' : 'bg-yellow-500 text-black'}`}>{scenario.id === 'nurse_job_interview' ? 'Interview' : 'Exam Prep'}</span>}
-                                          <span className={`text-xs font-bold px-3 py-1 rounded-full bg-black/30 border border-white/10 text-gray-300`}>{scenario.difficulty}</span>
+                              <div className="relative z-10 flex items-start gap-4">
+                                  <span className="text-3xl pt-1">{scenario.emoji}</span>
+                                  <div className="flex-1">
+                                      <div className="flex flex-wrap gap-2 mb-1">
+                                          {scenario.isExamPrep && <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm uppercase tracking-wide ${scenario.id === 'nurse_job_interview' ? 'bg-blue-500 text-white' : 'bg-yellow-500 text-black'}`}>{scenario.id === 'nurse_job_interview' ? 'Interview' : 'Exam Prep'}</span>}
+                                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-black/40 border border-white/10 text-gray-300`}>{scenario.difficulty}</span>
                                       </div>
+                                      <h3 className="text-lg font-bold text-white mb-1 leading-tight group-hover:text-white transition-colors">{scenario.title}</h3>
+                                      <p className="text-xs text-gray-400 leading-relaxed group-hover:text-gray-100">{scenario.description}</p>
                                   </div>
-                                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors">{scenario.title}</h3>
-                                  <p className="text-sm text-gray-400 leading-relaxed">{scenario.description}</p>
                               </div>
                           </button>
                       ))}
@@ -596,15 +596,15 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
   return (
     <div className="flex flex-col h-full bg-transparent text-white relative overflow-hidden">
         <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-            <div className="max-w-4xl mx-auto py-6 px-6 flex justify-between items-center pointer-events-auto">
-                <button onClick={() => {stopRecording(false); setSelectedScenario(null);}} className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide">
+            <div className="max-w-4xl mx-auto py-4 px-4 flex justify-between items-center pointer-events-auto">
+                <button onClick={() => {stopRecording(false); setSelectedScenario(null);}} className="glass-panel px-3 py-2 rounded-full flex items-center gap-2 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide active:scale-95">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
                 </button>
-                <div className="flex gap-3">
-                     <button onClick={toggleVision} className={`glass-panel p-3 rounded-full transition-all duration-300 ${isVisionEnabled ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'hover:bg-white/10 text-gray-400'}`}>
+                <div className="flex gap-2">
+                     <button onClick={toggleVision} className={`glass-panel p-2.5 rounded-full transition-all duration-300 active:scale-95 ${isVisionEnabled ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'hover:bg-white/10 text-gray-400'}`}>
                         <CameraIcon className="w-5 h-5" />
                     </button>
-                    <button onClick={() => setShowTranscript(!showTranscript)} className={`glass-panel p-3 rounded-full transition-all duration-300 ${showTranscript ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}>
+                    <button onClick={() => setShowTranscript(!showTranscript)} className={`glass-panel p-2.5 rounded-full transition-all duration-300 active:scale-95 ${showTranscript ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2-2z"></path></svg>
                     </button>
                 </div>
@@ -633,9 +633,9 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
 
         {!selectedScenario.dynamicTopic && (
             <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
-                <div className="animate-fade-in-up bg-black/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/5 flex items-center gap-3">
-                    <span className="text-2xl">{selectedScenario.emoji}</span>
-                    <span className="text-sm font-semibold text-gray-200">{selectedScenario.title}</span>
+                <div className="animate-fade-in-up bg-black/20 backdrop-blur-md px-5 py-2 rounded-full border border-white/5 flex items-center gap-3 shadow-xl">
+                    <span className="text-xl">{selectedScenario.emoji}</span>
+                    <span className="text-sm font-semibold text-gray-200 truncate max-w-[200px]">{selectedScenario.title}</span>
                 </div>
             </div>
         )}
@@ -643,7 +643,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
         <main className="flex-1 flex flex-col items-center justify-center relative">
             <div className="relative z-10 flex flex-col items-center justify-center">
                 <NovaOrb state={aiState} />
-                <div className={`mt-8 transition-all duration-500 overflow-hidden rounded-2xl border border-white/20 shadow-2xl ${isVisionEnabled ? 'w-48 h-64 opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-50'}`}>
+                <div className={`mt-8 transition-all duration-500 overflow-hidden rounded-2xl border border-white/20 shadow-2xl ${isVisionEnabled ? 'w-40 h-56 opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-50'}`}>
                     <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
                 </div>
@@ -655,21 +655,21 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                 </div>
             </div>
              {/* Transcript Panel */}
-             <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2.5rem] border-t border-white/10 flex flex-col shadow-2xl ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
-                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5 rounded-t-[2.5rem]">
-                    <h3 className="font-bold text-lg text-white">Live Transcript</h3>
+             <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2rem] border-t border-white/10 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
+                 <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5 rounded-t-[2rem]">
+                    <h3 className="font-bold text-base text-white">Live Transcript</h3>
                     <button onClick={() => setShowTranscript(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300"><path d="M6 9l6 6 6-6"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                  </div>
-                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {transcript.length === 0 && <p className="text-center text-gray-500 mt-10 italic">Start speaking to see the conversation...</p>}
+                 <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-10">
+                    {transcript.length === 0 && <p className="text-center text-gray-500 mt-10 italic text-sm">Start speaking to see the conversation...</p>}
                     {transcript.map((turn, index) => (
-                        <div key={index} className={`flex items-start gap-4 ${turn.speaker === 'user' ? 'flex-row-reverse' : ''} animate-fade-in-up`}>
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${turn.speaker === 'ai' ? 'bg-gradient-to-br from-purple-600 to-indigo-600' : 'bg-gray-700'}`}>
-                                {turn.speaker === 'ai' ? <BotIcon className="w-5 h-5 text-white" /> : <UserIcon className="w-5 h-5 text-gray-300" />}
+                        <div key={index} className={`flex items-start gap-3 ${turn.speaker === 'user' ? 'flex-row-reverse' : ''} animate-fade-in-up`}>
+                             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${turn.speaker === 'ai' ? 'bg-gradient-to-br from-purple-600 to-indigo-600' : 'bg-gray-700'}`}>
+                                {turn.speaker === 'ai' ? <BotIcon className="w-4 h-4 text-white" /> : <UserIcon className="w-4 h-4 text-gray-300" />}
                              </div>
-                             <div className={`p-4 rounded-2xl max-w-[85%] text-base leading-relaxed shadow-sm ${
+                             <div className={`p-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${
                                 turn.speaker === 'user' ? 'bg-gradient-to-r from-blue-600/40 to-blue-500/40 border border-blue-500/20 text-blue-50 rounded-tr-none' : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
                              }`}>
                                 {turn.text}
@@ -681,25 +681,25 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
             </div>
         </main>
 
-        <div className={`absolute bottom-24 left-0 right-0 z-20 flex justify-center pb-8 transition-transform duration-500 ${showTranscript ? 'translate-y-[200%]' : 'translate-y-0'}`}>
+        <div className={`absolute bottom-24 left-0 right-0 z-20 flex justify-center pb-6 transition-transform duration-500 ${showTranscript ? 'translate-y-[200%]' : 'translate-y-0'}`}>
             <button
                 onClick={isRecording ? () => stopRecording(true) : startRecording}
                 disabled={aiState === 'thinking'}
-                className={`relative group flex items-center justify-center w-24 h-24 rounded-full transition-all duration-300 shadow-2xl ${isRecording ? 'bg-red-500/10' : 'bg-white/5'}`}
+                className={`relative group flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 shadow-2xl active:scale-95 ${isRecording ? 'bg-red-500/10' : 'bg-white/5'}`}
             >
                  <div className={`absolute inset-0 rounded-full blur-xl transition-all duration-500 ${isRecording ? 'bg-red-500/40 scale-110' : 'bg-blue-500/0 group-hover:bg-blue-500/40 group-hover:scale-110'}`}></div>
-                 <div className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                 <div className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
                      isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-400 text-white' : 'bg-gradient-to-br from-gray-800 to-black border-white/20 text-gray-300 group-hover:border-blue-400/50 group-hover:text-white'
                  }`}>
                      {aiState === 'thinking' ? (
-                         <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     ) : isRecording ? <StopIcon className="w-8 h-8 fill-current" /> : <MicIcon className="w-8 h-8" />}
+                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                     ) : isRecording ? <StopIcon className="w-6 h-6 fill-current" /> : <MicIcon className="w-6 h-6" />}
                  </div>
             </button>
         </div>
 
       {error && (
-            <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-red-500/20 backdrop-blur-xl border border-red-500/30 text-red-100 px-6 py-4 rounded-2xl shadow-2xl text-center z-50 animate-fade-in-up">
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-red-500/20 backdrop-blur-xl border border-red-500/30 text-red-100 px-4 py-3 rounded-xl shadow-2xl text-center z-50 animate-fade-in-up text-sm">
                 <p className="font-semibold">{error}</p>
             </div>
       )}
