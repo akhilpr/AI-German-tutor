@@ -6,7 +6,7 @@ export interface User {
   email: string;
   photoUrl: string;
   track: UserTrack;
-  role: 'student' | 'teacher'; // Added role for B2B logic
+  role: 'student' | 'teacher';
 }
 
 export interface FeedbackScores {
@@ -19,7 +19,7 @@ export interface FeedbackScores {
 export interface VocabularyItem {
   word: string;
   translation: string;
-  context: string; // Example sentence using the word
+  context: string;
 }
 
 export interface FeedbackReport {
@@ -28,8 +28,10 @@ export interface FeedbackReport {
   scores: FeedbackScores;
   weakPoints: string[];
   improvementTips: string[];
-  newVocabulary: VocabularyItem[]; // NEW: Auto-generated vocab list
+  newVocabulary: VocabularyItem[];
   transcript: ConversationTurn[];
+  isExamCertificate?: boolean; // NEW
+  examTopicTitle?: string; // NEW
 }
 
 export interface ConversationTurn {
@@ -53,6 +55,13 @@ export interface WritingReport {
   improvementTips: string[];
 }
 
+// NEW: Dynamic Exam Topic Structure
+export interface ExamTopic {
+  title: string;
+  bulletPoints: string[]; // For presentation structure (e.g., "Pros/Cons", "My Experience")
+  introText: string; // The prompt text on the exam card
+}
+
 export interface Scenario {
   id: string;
   title: string;
@@ -64,6 +73,7 @@ export interface Scenario {
   colorFrom: string;
   colorTo: string;
   isExamPrep?: boolean;
+  dynamicTopic?: ExamTopic; // NEW: If present, this is a dynamically generated scenario
 }
 
 export enum AppView {

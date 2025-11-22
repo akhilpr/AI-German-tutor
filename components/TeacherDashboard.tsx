@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { User } from '../types';
-import { ChartIcon, UserIcon } from './icons';
+import { ChartIcon, UserIcon, LogoutIcon } from './icons';
 import ProgressChart from './ProgressChart';
 
 interface TeacherDashboardProps {
     user: User;
+    onLogout: () => void;
 }
 
 // Mock Data for the dashboard
@@ -25,7 +25,7 @@ const BATCH_PERFORMANCE = [
     { name: 'Week 5', nursing: 8.1, academic: 7.2 },
 ];
 
-const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ user }) => {
+const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ user, onLogout }) => {
     const chartLines = [
         { dataKey: 'nursing', name: 'Nursing Batch', stroke: '#10b981', strokeWidth: 3 },
         { dataKey: 'academic', name: 'Academic Batch', stroke: '#8b5cf6', strokeWidth: 3 },
@@ -39,11 +39,18 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ user }) => {
                         <h1 className="text-xl font-bold text-white">Institute Dashboard</h1>
                         <p className="text-xs text-gray-400">Batch Overview: Kerala Batch 2024</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                          <div className="text-right hidden sm:block">
                             <div className="text-sm font-bold text-white">{user.name}</div>
                             <div className="text-xs text-gray-400">Admin View</div>
                          </div>
+                        <button 
+                            onClick={onLogout}
+                            className="text-gray-400 hover:text-red-400 transition-colors p-2"
+                            title="Log Out"
+                        >
+                            <LogoutIcon className="w-5 h-5" />
+                        </button>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 p-0.5">
                             <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt="Admin" />
                         </div>

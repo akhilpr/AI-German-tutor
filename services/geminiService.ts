@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { FeedbackReport, ConversationTurn, WritingReport } from '../types';
+import { FeedbackReport, ConversationTurn, WritingReport, ExamTopic } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable is not set");
@@ -8,7 +9,6 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function getFeedbackOnConversation(transcript: ConversationTurn[]): Promise<Omit<FeedbackReport, 'id' | 'date' | 'transcript'>> {
-    // Limit transcript context if it's too huge, though typically fine for text
     const conversationText = transcript.map(turn => `${turn.speaker === 'user' ? 'Student' : 'Tutor (Nova)'}: ${turn.text}`).join('\n');
 
     const prompt = `
@@ -146,5 +146,84 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
     } catch (error) {
         console.error("Error getting writing feedback from Gemini API:", error);
         throw new Error("Failed to generate feedback for the provided image.");
+    }
+}
+
+// NEW: Generates a unique Exam Topic based on Track AND Level
+export async function generateDynamicExamTopic(track: 'nursing' | 'academic' | 'general', level: string): Promise<ExamTopic> {
+    let contextPrompt = "";
+    let complexityPrompt = "";
+
+    // Define Complexity based on Level
+    switch (level) {
+        case 'A1':
+        case 'A2':
+            complexityPrompt = "Level: Beginner (A1/A2). Topics should be simple: Family, Hobbies, Daily Routine, Food, Weather. The 'introText' should be very simple German.";
+            break;
+        case 'B1':
+        case 'B2':
+            complexityPrompt = "Level: Intermediate (B1/B2). Topics should be argumentative: Work life, Environment, Technology, Health. Requires expressing opinions (Pros/Cons).";
+            break;
+        case 'C1':
+        case 'C2':
+            complexityPrompt = "Level: Expert (C1/C2). Topics should be abstract and complex: Ethics, Globalization, Scientific progress, Politics. High-level vocabulary expected.";
+            break;
+        default:
+            complexityPrompt = "Level: B2 (Intermediate). Standard exam topics.";
+    }
+    
+    // Define Context
+    if (track === 'nursing') {
+        contextPrompt = "The topic must be related to healthcare, hospital situations, patient care, or medical ethics.";
+    } else if (track === 'academic') {
+        contextPrompt = "The topic must be related to university life, research, education systems, or student living.";
+    } else {
+        contextPrompt = "The topic can be general social issues or daily life situations depending on the level.";
+    }
+
+    const prompt = `
+        Generate a random German Speaking Exam Topic (Teil 1: Vortrag / Sprechen).
+        ${contextPrompt}
+        ${complexityPrompt}
+        
+        The output must be a JSON object with:
+        - "title": The main question or topic title (German).
+        - "introText": A short framing of the topic (German) appropriate for the level ${level}.
+        - "bulletPoints": 4 specific points the student must cover (e.g., for A1: "Name", "Age", "Hobby"; for B2: "Pros", "Cons", "Opinion").
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        introText: { type: Type.STRING },
+                        bulletPoints: { 
+                            type: Type.ARRAY, 
+                            items: { type: Type.STRING } 
+                        }
+                    },
+                    required: ["title", "introText", "bulletPoints"]
+                }
+            }
+        });
+        
+        const jsonText = response.text?.trim();
+        if (!jsonText) throw new Error("Empty response");
+        return JSON.parse(jsonText);
+
+    } catch (error) {
+        console.error("Error generating exam topic", error);
+        // Fallback topic if API fails
+        return {
+            title: "Mein liebstes Hobby",
+            introText: "Erzählen Sie uns etwas über sich.",
+            bulletPoints: ["Was ist Ihr Hobby?", "Warum machen Sie es?", "Wie oft?", "Mit wem?"]
+        };
     }
 }

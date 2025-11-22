@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, AppView } from './types';
 import LoginPage from './components/LoginPage';
@@ -48,6 +47,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+      setUser(null);
+      localStorage.removeItem('german_tutor_user');
+      setCurrentView(AppView.LOGIN);
+  };
+
   const renderView = () => {
     if (isLoading) {
         return (
@@ -63,15 +68,15 @@ const App: React.FC = () => {
 
     switch (currentView) {
       case AppView.CONVERSATION:
-        return <ConversationPage user={user} />;
+        return <ConversationPage user={user} onLogout={handleLogout} />;
       case AppView.WRITING:
-        return <WritingPage user={user} />;
+        return <WritingPage user={user} onLogout={handleLogout} />;
       case AppView.PROGRESS:
-        return <ProgressPage user={user} />;
+        return <ProgressPage user={user} onLogout={handleLogout} />;
       case AppView.TEACHER_DASHBOARD:
-        return <TeacherDashboard user={user} />;
+        return <TeacherDashboard user={user} onLogout={handleLogout} />;
       default:
-        return <ConversationPage user={user} />;
+        return <ConversationPage user={user} onLogout={handleLogout} />;
     }
   };
 

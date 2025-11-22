@@ -1,24 +1,73 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
-import { User, ConversationTurn, FeedbackReport, Scenario, UserTrack } from '../types';
-import { MicIcon, StopIcon, BotIcon, UserIcon, CameraIcon } from './icons';
+import { User, ConversationTurn, FeedbackReport, Scenario, UserTrack, ExamTopic } from '../types';
+import { MicIcon, StopIcon, BotIcon, UserIcon, CameraIcon, LogoutIcon, SparklesIcon, CertificateIcon } from './icons';
 import { encode, decode, decodeAudioData } from '../utils/audio';
-import { getFeedbackOnConversation } from '../services/geminiService';
+import { getFeedbackOnConversation, generateDynamicExamTopic } from '../services/geminiService';
 import FeedbackModal from './FeedbackModal';
 
 interface ConversationPageProps {
   user: User;
+  onLogout: () => void;
 }
 
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 const SCRIPT_PROCESSOR_BUFFER_SIZE = 4096;
-const VIDEO_FRAME_RATE = 1; // 1 FPS to save bandwidth for Indian market
+const VIDEO_FRAME_RATE = 1;
 
-// SCENARIO DATABASE - Tailored for Kerala Market / B2B Institutions
+// SCENARIO DATABASE
 const SCENARIOS: Scenario[] = [
-    // --- EXAM PREP (All Tracks) ---
+    {
+        id: 'beginner_bakery',
+        title: 'At the Bakery (A1)',
+        description: 'Beginner: Buy bread and coffee. Simple polite phrases.',
+        emoji: '🥐',
+        difficulty: 'A1',
+        track: 'general',
+        colorFrom: 'from-yellow-400',
+        colorTo: 'to-orange-400',
+        systemPrompt: `
+            ROLEPLAY: BAKERY (Bäckerei).
+            Level: A1 (Beginner).
+            You are a friendly bakery clerk. The user is a customer.
+            1. Say "Guten Morgen/Tag! Was darf es sein?"
+            2. Use very simple German. Speak slowly.
+            3. Expect them to order simple items (Brötchen, Brot, Kaffee).
+            4. Ask "Sonst noch etwas?" (Anything else?).
+            5. Say the price at the end (e.g., "Das macht 3 Euro 50").
+            6. Correct them only if they speak English or are unintelligible.
+        `
+    },
+    {
+        id: 'nurse_job_interview',
+        title: 'Job Interview (Vorstellungsgespräch)',
+        description: 'High-stakes interview simulation. Convince the Head Nurse to hire you.',
+        emoji: '🤝',
+        difficulty: 'C1',
+        track: 'nursing',
+        colorFrom: 'from-slate-600',
+        colorTo: 'to-gray-700',
+        isExamPrep: true,
+        systemPrompt: `
+            STRICT ROLEPLAY: JOB INTERVIEW (Vorstellungsgespräch).
+            
+            You are Frau Schneider, the Pflegedienstleitung (Head of Nursing) at a prestigious German hospital. 
+            You are interviewing the user for a nursing position.
+            
+            BEHAVIOR:
+            1. Start formally: "Guten Tag. Nehmen Sie Platz. Warum haben Sie sich bei uns beworben?"
+            2. Be professional, demanding, and use the "Sie" form.
+            3. Ask specifically about:
+               - Motivation for working in Germany.
+               - Handling stress (Stressresistenz).
+               - A specific conflict situation with a colleague or patient in the past.
+            4. If they make small mistakes, ignore them. If they make big mistakes, look confused ("Wie bitte?").
+            5. Do NOT act as a teacher. Do NOT correct them. You are an employer.
+            6. Conclude with: "Wir melden uns bei Ihnen" (We will contact you).
+        `
+    },
     {
         id: 'exam_b2_planen',
         title: 'Exam Prep: Plan Together',
@@ -31,8 +80,6 @@ const SCENARIOS: Scenario[] = [
         colorTo: 'to-orange-600',
         systemPrompt: 'EXAM SIMULATION MODE (Goethe/Telc B2 - Teil 3). You are the exam partner. We need to plan a surprise party for a colleague "Müller". You must: 1. Disagree politely with some of the user suggestions to test their argumentation. 2. Suggest alternatives. 3. Ensure we cover: Food, Location, Gift, and Music. Keep the conversation flowing naturally but ensure the user speaks in full sentences.'
     },
-    
-    // --- NURSING TRACK (Pflege) ---
     {
         id: 'nurse_anamnese',
         title: 'Patient Admission (Anamnese)',
@@ -55,8 +102,6 @@ const SCENARIOS: Scenario[] = [
         colorTo: 'to-blue-600',
         systemPrompt: 'Roleplay: You are the colleague coming for the night shift. The user is ending their shift. They must explain that patient "Frau Klein" fell down at 14:00. Ask clarifying questions: "Did you call the doctor?", "Is the family informed?", "Are the vitals stable?". Force the user to use Präteritum/Perfekt tense.'
     },
-
-    // --- ACADEMIC TRACK (Student) ---
     {
         id: 'student_visa',
         title: 'Visa Interview Prep',
@@ -78,19 +123,6 @@ const SCENARIOS: Scenario[] = [
         colorFrom: 'from-blue-500',
         colorTo: 'to-indigo-500',
         systemPrompt: 'Roleplay: You are the university secretary. The user wants to enroll (immatrikulieren) but is missing their health insurance proof (Krankenversicherungsnachweis). Be bureaucratic. Tell them it is impossible without it. Force them to convince you to give them a temporary extension.'
-    },
-
-    // --- GENERAL ---
-    {
-        id: 'free_talk',
-        title: 'Casual Conversation',
-        description: 'Relaxed practice about daily topics, hobbies, or news.',
-        emoji: '☕',
-        difficulty: 'A2',
-        track: 'general',
-        colorFrom: 'from-pink-500',
-        colorTo: 'to-rose-500',
-        systemPrompt: 'You are Nova, a friendly German tutor. Chat about hobbies, weather, or food. Keep it simple (A2 level). Correct major mistakes gently.'
     }
 ];
 
@@ -104,7 +136,7 @@ const NovaOrb: React.FC<{ state: 'idle' | 'listening' | 'thinking' | 'speaking' 
     );
 };
 
-const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
+const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) => {
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
@@ -114,7 +146,13 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
   const [showTranscript, setShowTranscript] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   
-  // Vision State
+  // Exam Generator State
+  const [isGeneratingExam, setIsGeneratingExam] = useState(false);
+  const [examLevel, setExamLevel] = useState<string>('B2');
+
+  // Casual Chat State
+  const [casualLevel, setCasualLevel] = useState<string>('A2');
+  
   const [isVisionEnabled, setIsVisionEnabled] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,12 +165,10 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
-
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
 
-  // Filter Scenarios based on user track
   const filteredScenarios = SCENARIOS.filter(s => 
       s.track === 'all' || s.track === user.track || user.track === 'general'
   ).sort((a, b) => (a.isExamPrep === b.isExamPrep ? 0 : a.isExamPrep ? -1 : 1));
@@ -144,10 +180,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
     }
     aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: OUTPUT_SAMPLE_RATE });
-
-    return () => {
-      stopRecording(false);
-    };
+    return () => { stopRecording(false); };
   }, []);
 
   useEffect(() => {
@@ -156,36 +189,96 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
     }
   }, [transcript, showTranscript]);
 
-  // Helper to capture frame and send to Gemini
+  const handleStartCasualChat = () => {
+    const levelConfig: Record<string, string> = {
+        'A1': 'Level: A1 (Beginner). Speak strictly in simple, short sentences. Use high-frequency words. Speak slowly.',
+        'A2': 'Level: A2 (Elementary). Discuss daily topics. Use simple past tense. Clear articulation.',
+        'B1': 'Level: B1 (Intermediate). Standard conversation. Share experiences and opinions.',
+        'B2': 'Level: B2 (Upper Intermediate). Complex topics, abstract ideas. Normal conversational speed.',
+        'C1': 'Level: C1 (Advanced). Sophisticated vocabulary, idioms, and fast/native pace.',
+    };
+
+    const scenario: Scenario = {
+        id: `casual_${Date.now()}`,
+        title: `Casual Conversation (${casualLevel})`,
+        description: `Open-ended practice at ${casualLevel} level.`,
+        emoji: '☕',
+        difficulty: casualLevel as any,
+        track: 'all',
+        colorFrom: 'from-pink-500',
+        colorTo: 'to-rose-600',
+        systemPrompt: `
+            You are Nova, a friendly and encouraging German conversation partner.
+            ${levelConfig[casualLevel] || levelConfig['A2']}
+            
+            Mode: CASUAL CHAT (No specific topic).
+            
+            Instructions:
+            1. Start by warmly greeting the user and asking "Wie geht es dir?" or "Was gibt es Neues?".
+            2. Keep the conversation natural and open-ended.
+            3. If the user makes a mistake, gentle correct them naturally in your reply, but do not interrupt the flow.
+            4. If the conversation stalls, suggest a simple topic like hobbies, food, or weekend plans.
+        `
+    };
+    setSelectedScenario(scenario);
+  };
+
+  const handleGenerateExam = async () => {
+      setIsGeneratingExam(true);
+      try {
+          const topic = await generateDynamicExamTopic(user.track, examLevel);
+          const dynamicScenario: Scenario = {
+              id: `exam_generated_${Date.now()}`,
+              title: `${examLevel} Exam Simulator`,
+              description: `Strict mock exam mode (${examLevel}). Topic: ` + topic.title,
+              emoji: '👨‍🏫',
+              difficulty: examLevel as any,
+              track: user.track,
+              colorFrom: 'from-amber-600',
+              colorTo: 'to-orange-700',
+              isExamPrep: true,
+              dynamicTopic: topic,
+              systemPrompt: `
+                CRITICAL ROLEPLAY INSTRUCTION:
+                You are "Herr Müller", a STRICT German Language Examiner (Prüfer) for the ${examLevel} Exam.
+                
+                CONTEXT:
+                The student must deliver a presentation (Vortrag) on the topic: "${topic.title}".
+                Level: ${examLevel}.
+                
+                YOUR BEHAVIOR:
+                1. Start by asking the student formally to begin their presentation.
+                2. Listen silently for about 2-3 sentences. If they pause, gently prompt them.
+                3. After they finish, ask 2 specific FOLLOW-UP QUESTIONS (Rückfragen) appropriate for ${examLevel}.
+                4. Be professional, formal.
+                5. Do not correct them during the exam. Save corrections for the feedback.
+              `
+          };
+          setSelectedScenario(dynamicScenario);
+      } catch (e) {
+          setError("Failed to generate exam topic. Please try again.");
+      } finally {
+          setIsGeneratingExam(false);
+      }
+  };
+
   const captureAndSendFrame = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || !isSessionActive) return;
-    
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
     if (!ctx || video.videoWidth === 0) return;
-
-    canvas.width = video.videoWidth / 2; // Downscale for performance
+    canvas.width = video.videoWidth / 2; 
     canvas.height = video.videoHeight / 2;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; // Low quality JPEG
-    
+    const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
     sessionPromiseRef.current?.then((session) => {
-        session.sendRealtimeInput({ 
-            media: { 
-                mimeType: 'image/jpeg', 
-                data: base64Data 
-            } 
-        });
+        session.sendRealtimeInput({ media: { mimeType: 'image/jpeg', data: base64Data } });
     });
   }, [isSessionActive]);
 
-  // Enable/Disable Vision
   const toggleVision = async () => {
       if (isVisionEnabled) {
-          // Turn off
           if (videoIntervalRef.current) clearInterval(videoIntervalRef.current);
           if (videoRef.current && videoRef.current.srcObject) {
               const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
@@ -194,84 +287,55 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
           }
           setIsVisionEnabled(false);
       } else {
-          // Turn on
           try {
               const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
               if (videoRef.current) {
                   videoRef.current.srcObject = stream;
                   await videoRef.current.play();
                   setIsVisionEnabled(true);
-                  
-                  // Start sending frames if session is active
-                  if (isSessionActive) {
-                      videoIntervalRef.current = window.setInterval(captureAndSendFrame, 1000 / VIDEO_FRAME_RATE);
-                  }
+                  if (isSessionActive) videoIntervalRef.current = window.setInterval(captureAndSendFrame, 1000 / VIDEO_FRAME_RATE);
               }
           } catch (e) {
-              console.error("Camera permission denied", e);
               setError("Could not access camera.");
           }
       }
   };
 
   useEffect(() => {
-      // If vision is enabled but session stops, clear interval
       if (isVisionEnabled && isSessionActive && !videoIntervalRef.current) {
           videoIntervalRef.current = window.setInterval(captureAndSendFrame, 1000 / VIDEO_FRAME_RATE);
       } else if (!isSessionActive && videoIntervalRef.current) {
           clearInterval(videoIntervalRef.current);
           videoIntervalRef.current = null;
       }
-      return () => {
-          if (videoIntervalRef.current) clearInterval(videoIntervalRef.current);
-      };
+      return () => { if (videoIntervalRef.current) clearInterval(videoIntervalRef.current); };
   }, [isSessionActive, isVisionEnabled, captureAndSendFrame]);
 
-
-  // Audio Playback Logic
   const handlePlayback = useCallback(async (base64EncodedAudioString: string) => {
     const outputAudioContext = outputAudioContextRef.current;
     if (!outputAudioContext) return;
-    
     if (aiState === 'listening') return;
-
     setAiState('speaking');
-    
     const currentTime = outputAudioContext.currentTime;
-    if (nextStartTimeRef.current < currentTime) {
-        nextStartTimeRef.current = currentTime;
-    }
-
+    if (nextStartTimeRef.current < currentTime) nextStartTimeRef.current = currentTime;
     try {
         const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputAudioContext, OUTPUT_SAMPLE_RATE, 1);
         const source = outputAudioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(outputAudioContext.destination);
-        
         source.addEventListener('ended', () => { 
             audioSourcesRef.current.delete(source); 
-            if(audioSourcesRef.current.size === 0) {
-                if (isSessionActive) {
-                    setAiState('listening');
-                } else {
-                    setAiState('idle');
-                }
-            }
+            if(audioSourcesRef.current.size === 0) setAiState(isSessionActive ? 'listening' : 'idle');
         });
-
         source.start(nextStartTimeRef.current);
         nextStartTimeRef.current += audioBuffer.duration;
         audioSourcesRef.current.add(source);
-    } catch (e) {
-        console.error("Audio decode error", e);
-    }
+    } catch (e) { console.error("Audio decode error", e); }
   }, [aiState, isSessionActive]);
   
   const stopPlayback = useCallback(() => {
     if (outputAudioContextRef.current) {
-        for (const source of audioSourcesRef.current.values()) {
-            source.stop();
-        }
+        for (const source of audioSourcesRef.current.values()) source.stop();
         audioSourcesRef.current.clear();
         nextStartTimeRef.current = 0;
     }
@@ -282,7 +346,6 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
     setIsSessionActive(false);
     setAiState('thinking'); 
 
-    // Stop vision stream
     if (videoIntervalRef.current) clearInterval(videoIntervalRef.current);
     if (videoRef.current && videoRef.current.srcObject) {
         const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
@@ -290,27 +353,14 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
         videoRef.current.srcObject = null;
     }
     setIsVisionEnabled(false);
-
-    if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        mediaStreamRef.current = null;
-    }
-
+    if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(track => track.stop()); mediaStreamRef.current = null; }
     if (mediaStreamSourceRef.current && scriptProcessorRef.current) {
         mediaStreamSourceRef.current.disconnect();
         scriptProcessorRef.current.disconnect();
         scriptProcessorRef.current.onaudioprocess = null;
     }
-    
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-    }
-    
-    if (sessionPromiseRef.current) {
-        const session = await sessionPromiseRef.current;
-        session.close();
-        sessionPromiseRef.current = null;
-    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') audioContextRef.current.close();
+    if (sessionPromiseRef.current) { (await sessionPromiseRef.current).close(); sessionPromiseRef.current = null; }
     
     stopPlayback();
 
@@ -322,6 +372,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
           date: new Date().toISOString(),
           ...feedbackData,
           transcript: [...transcript],
+          isExamCertificate: selectedScenario?.isExamPrep,
+          examTopicTitle: selectedScenario?.dynamicTopic?.title || selectedScenario?.title
         };
         
         const storedReportsRaw = localStorage.getItem('german_tutor_reports');
@@ -330,18 +382,16 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
 
         setFeedbackReport(newReport);
       } catch (error) {
-        console.error("Failed to get feedback:", error);
         setError("Feedback generation failed.");
       }
     } else {
        if (!shouldGetFeedback) setTranscript([]); 
     }
     setAiState('idle');
-  }, [transcript, stopPlayback]);
+  }, [transcript, stopPlayback, selectedScenario]);
 
   const startRecording = useCallback(async () => {
     if (!aiRef.current || !selectedScenario) return;
-    
     setError(null);
     setTranscript([]); 
     setIsRecording(true);
@@ -352,13 +402,10 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaStreamRef.current = stream;
-
         const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: INPUT_SAMPLE_RATE });
         audioContextRef.current = inputAudioContext;
-        
         const source = inputAudioContext.createMediaStreamSource(stream);
         mediaStreamSourceRef.current = source;
-        
         const scriptProcessor = inputAudioContext.createScriptProcessor(SCRIPT_PROCESSOR_BUFFER_SIZE, 1, 1);
         scriptProcessorRef.current = scriptProcessor;
 
@@ -372,29 +419,18 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
                 const l = inputData.length;
                 const int16 = new Int16Array(l);
                 for (let i = 0; i < l; i++) { int16[i] = inputData[i] * 32768; }
-                const pcmBlob: Blob = {
-                    data: encode(new Uint8Array(int16.buffer)),
-                    mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
-                };
-                sessionPromiseRef.current?.then((session) => {
-                    session.sendRealtimeInput({ media: pcmBlob });
-                });
+                const pcmBlob: Blob = { data: encode(new Uint8Array(int16.buffer)), mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}` };
+                sessionPromiseRef.current?.then((session) => session.sendRealtimeInput({ media: pcmBlob }));
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputAudioContext.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.outputTranscription) {
-              currentOutputTranscription += message.serverContent.outputTranscription.text;
-            }
-            if (message.serverContent?.inputTranscription) {
-              currentInputTranscription += message.serverContent.inputTranscription.text;
-            }
-            
+            if (message.serverContent?.outputTranscription) currentOutputTranscription += message.serverContent.outputTranscription.text;
+            if (message.serverContent?.inputTranscription) currentInputTranscription += message.serverContent.inputTranscription.text;
             if (message.serverContent?.turnComplete) {
               const finalUserInput = currentInputTranscription.trim();
               const finalModelOutput = currentOutputTranscription.trim();
-              
               if (finalUserInput || finalModelOutput) {
                  setTranscript(prev => {
                      const newTrans = [...prev];
@@ -406,26 +442,12 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
               currentInputTranscription = '';
               currentOutputTranscription = '';
             }
-            
             const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-            if (base64Audio) { 
-                handlePlayback(base64Audio); 
-            }
-            
-            if (message.serverContent?.interrupted) { 
-                stopPlayback(); 
-                setAiState('listening'); 
-                currentOutputTranscription = '';
-            }
+            if (base64Audio) handlePlayback(base64Audio); 
+            if (message.serverContent?.interrupted) { stopPlayback(); setAiState('listening'); currentOutputTranscription = ''; }
           },
-          onerror: (e: ErrorEvent) => {
-              console.error('Session error:', e);
-              setError("Connection lost.");
-              stopRecording(false);
-          },
-          onclose: (e: CloseEvent) => {
-              setAiState('idle');
-          },
+          onerror: (e: ErrorEvent) => { setError("Connection lost."); stopRecording(false); },
+          onclose: (e: CloseEvent) => { setAiState('idle'); },
       };
 
         sessionPromiseRef.current = aiRef.current.live.connect({
@@ -436,50 +458,114 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
                 systemInstruction: `
-                    You are Nova, an expert German tutor preparing a student.
                     ${selectedScenario.systemPrompt}
                     
                     General Rules:
-                    1. Speak clearly at a moderate pace suitable for ${selectedScenario.difficulty} level.
-                    2. Correct grammar mistakes ONLY if they disrupt understanding or are very basic, otherwise focus on flow.
-                    3. If the student is stuck, give a hint in English but switch back to German immediately.
-                    4. VISION CAPABILITY: You have eyes. If the user enables the camera and shows you an object, medical tool, or document, describe it or help them name it in German.
+                    1. Speak clearly.
+                    2. If camera is enabled, describe what you see if asked.
+                    3. For Exam/Interview Topics: Adhere strictly to the examiner/interviewer role.
                 `,
             },
         });
-        
-    } catch (err) {
-      console.error('Error starting recording:', err);
-      setError('Microphone access denied.');
-      setIsRecording(false);
-      setAiState('idle');
-    }
+    } catch (err) { setIsRecording(false); setAiState('idle'); }
   }, [handlePlayback, stopPlayback, stopRecording, selectedScenario]);
   
-  const handleCloseModal = () => {
-    setFeedbackReport(null);
-    setTranscript([]); 
-    setSelectedScenario(null); 
-  };
-
-  const handleBackToMenu = () => {
-      stopRecording(false);
-      setSelectedScenario(null);
-  };
-
-  // SCENARIO SELECTION MENU
   if (!selectedScenario) {
       return (
           <div className="flex flex-col h-full overflow-y-auto pb-28">
               <div className="pt-8 px-6 pb-4 max-w-4xl mx-auto w-full">
-                  <div className="mb-6">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-900/30 px-3 py-1 rounded-lg border border-blue-500/30">
-                        Track: {user.track.charAt(0).toUpperCase() + user.track.slice(1)}
-                    </span>
-                    <h1 className="text-2xl font-bold text-white mt-2">Training Modules</h1>
-                    <p className="text-gray-400">Select a scenario to practice.</p>
+                  <div className="mb-6 flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-900/30 px-3 py-1 rounded-lg border border-blue-500/30">
+                            Track: {user.track.charAt(0).toUpperCase() + user.track.slice(1)}
+                        </span>
+                        <h1 className="text-2xl font-bold text-white mt-2">Training Modules</h1>
+                        <p className="text-gray-400">Select a scenario to practice.</p>
+                    </div>
+                    <button onClick={onLogout} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full text-sm font-medium text-gray-300 hover:text-red-400 transition-all">
+                        <LogoutIcon className="w-4 h-4" />
+                        <span>Log Out</span>
+                    </button>
                   </div>
                   
+                  {/* Quick Start Section (Casual & Exam) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                      {/* CASUAL CHAT CARD */}
+                      <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg p-1">
+                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="relative bg-[#121212] rounded-[1.8rem] p-6 h-full flex flex-col justify-between">
+                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
+                                     <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                                            <div className="text-2xl">☕</div>
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="text-lg font-bold text-white">Casual Chat</h3>
+                                            <p className="text-xs text-gray-400">Just talk. No pressure.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+                                        {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
+                                            <button 
+                                                key={lvl}
+                                                onClick={() => setCasualLevel(lvl)}
+                                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${casualLevel === lvl ? 'bg-pink-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                {lvl}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleStartCasualChat}
+                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-pink-300 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2"
+                                >
+                                    Start Conversation
+                                </button>
+                          </div>
+                      </div>
+
+                      {/* EXAM GENERATOR CARD */}
+                      <div className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-600 to-orange-700 shadow-lg p-1">
+                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="relative bg-[#121212] rounded-[1.8rem] p-6 h-full flex flex-col justify-between">
+                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
+                                     <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                                            {isGeneratingExam ? <div className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5"></div> : <SparklesIcon className="w-6 h-6 text-white" />}
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="text-lg font-bold text-white">Exam Simulator</h3>
+                                            <p className="text-xs text-gray-400">Dynamic exam topics.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+                                        {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
+                                            <button 
+                                                key={lvl}
+                                                onClick={() => setExamLevel(lvl)}
+                                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${examLevel === lvl ? 'bg-amber-500 text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                {lvl}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={handleGenerateExam}
+                                    disabled={isGeneratingExam}
+                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-amber-400 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2"
+                                >
+                                    Generate Topic & Start
+                                </button>
+                          </div>
+                      </div>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Roleplay Scenarios</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {filteredScenarios.map((scenario) => (
                           <button
@@ -492,12 +578,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
                                   <div className="flex justify-between items-start mb-4">
                                       <span className="text-4xl">{scenario.emoji}</span>
                                       <div className="flex gap-2">
-                                          {scenario.isExamPrep && (
-                                               <span className="text-[10px] font-extrabold px-2 py-1 rounded-full bg-yellow-500 text-black uppercase">Exam Prep</span>
-                                          )}
-                                          <span className={`text-xs font-bold px-3 py-1 rounded-full bg-black/30 border border-white/10 text-gray-300`}>
-                                              {scenario.difficulty}
-                                          </span>
+                                          {scenario.isExamPrep && <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full uppercase ${scenario.id === 'nurse_job_interview' ? 'bg-blue-500 text-white' : 'bg-yellow-500 text-black'}`}>{scenario.id === 'nurse_job_interview' ? 'Interview' : 'Exam Prep'}</span>}
+                                          <span className={`text-xs font-bold px-3 py-1 rounded-full bg-black/30 border border-white/10 text-gray-300`}>{scenario.difficulty}</span>
                                       </div>
                                   </div>
                                   <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors">{scenario.title}</h3>
@@ -511,56 +593,60 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
       );
   }
 
-  // ACTIVE CONVERSATION VIEW
   return (
     <div className="flex flex-col h-full bg-transparent text-white relative overflow-hidden">
         <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
             <div className="max-w-4xl mx-auto py-6 px-6 flex justify-between items-center pointer-events-auto">
-                <button 
-                    onClick={handleBackToMenu}
-                    className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide"
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    Back
+                <button onClick={() => {stopRecording(false); setSelectedScenario(null);}} className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
                 </button>
-
                 <div className="flex gap-3">
-                     {/* VISION TOGGLE */}
-                     <button 
-                        onClick={toggleVision}
-                        className={`glass-panel p-3 rounded-full transition-all duration-300 ${isVisionEnabled ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'hover:bg-white/10 text-gray-400'}`}
-                    >
+                     <button onClick={toggleVision} className={`glass-panel p-3 rounded-full transition-all duration-300 ${isVisionEnabled ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'hover:bg-white/10 text-gray-400'}`}>
                         <CameraIcon className="w-5 h-5" />
                     </button>
-
-                    <button 
-                        onClick={() => setShowTranscript(!showTranscript)}
-                        className={`glass-panel p-3 rounded-full transition-all duration-300 ${showTranscript ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}
-                    >
+                    <button onClick={() => setShowTranscript(!showTranscript)} className={`glass-panel p-3 rounded-full transition-all duration-300 ${showTranscript ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2-2z"></path></svg>
                     </button>
                 </div>
             </div>
         </header>
 
-        <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
-            <div className="animate-fade-in-up bg-black/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/5 flex items-center gap-3">
-                <span className="text-2xl">{selectedScenario.emoji}</span>
-                <span className="text-sm font-semibold text-gray-200">{selectedScenario.title}</span>
+        {/* EXAM CARD OVERLAY */}
+        {selectedScenario.dynamicTopic && !isRecording && aiState === 'idle' && (
+            <div className="absolute top-20 left-4 right-4 z-10 max-w-md mx-auto animate-fade-in-up">
+                <div className="bg-[#fffbf0] text-black p-6 rounded-lg shadow-2xl border-2 border-amber-500 rotate-1">
+                     <div className="border-b-2 border-black pb-2 mb-4 flex justify-between items-center">
+                         <h3 className="font-bold uppercase tracking-widest text-sm">Teil 1: Vortrag</h3>
+                         <span className="bg-black text-white text-xs px-2 py-1 font-bold">{selectedScenario.difficulty}</span>
+                     </div>
+                     <h2 className="text-xl font-bold mb-2 leading-tight">{selectedScenario.dynamicTopic.title}</h2>
+                     <p className="text-sm mb-4 italic text-gray-700">{selectedScenario.dynamicTopic.introText}</p>
+                     <ul className="text-sm font-medium space-y-2 list-disc list-inside">
+                         {selectedScenario.dynamicTopic.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
+                     </ul>
+                     <div className="mt-4 pt-4 border-t border-gray-300 text-center text-xs text-gray-500 uppercase font-bold">
+                         Start recording to begin exam
+                     </div>
+                </div>
             </div>
-        </div>
+        )}
+
+        {!selectedScenario.dynamicTopic && (
+            <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
+                <div className="animate-fade-in-up bg-black/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/5 flex items-center gap-3">
+                    <span className="text-2xl">{selectedScenario.emoji}</span>
+                    <span className="text-sm font-semibold text-gray-200">{selectedScenario.title}</span>
+                </div>
+            </div>
+        )}
 
         <main className="flex-1 flex flex-col items-center justify-center relative">
             <div className="relative z-10 flex flex-col items-center justify-center">
-                {/* Nova Visualization */}
                 <NovaOrb state={aiState} />
-                
-                {/* Vision Preview (PiP) */}
                 <div className={`mt-8 transition-all duration-500 overflow-hidden rounded-2xl border border-white/20 shadow-2xl ${isVisionEnabled ? 'w-48 h-64 opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-50'}`}>
                     <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
                 </div>
-
                 <div className="mt-10 text-center h-8 transition-all duration-500">
                     {aiState === 'idle' && <p className="text-gray-400 text-sm font-medium tracking-wide uppercase animate-fade-in-up">Tap Mic to Start</p>}
                     {aiState === 'listening' && <p className="text-blue-400 text-sm font-bold tracking-widest uppercase animate-pulse">Listening</p>}
@@ -568,8 +654,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
                     {aiState === 'speaking' && <p className="text-pink-400 text-sm font-bold tracking-widest uppercase">Nova Speaking</p>}
                 </div>
             </div>
-
-            <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2.5rem] border-t border-white/10 flex flex-col shadow-2xl ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
+             {/* Transcript Panel */}
+             <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2.5rem] border-t border-white/10 flex flex-col shadow-2xl ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
                  <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5 rounded-t-[2.5rem]">
                     <h3 className="font-bold text-lg text-white">Live Transcript</h3>
                     <button onClick={() => setShowTranscript(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
@@ -603,17 +689,11 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
             >
                  <div className={`absolute inset-0 rounded-full blur-xl transition-all duration-500 ${isRecording ? 'bg-red-500/40 scale-110' : 'bg-blue-500/0 group-hover:bg-blue-500/40 group-hover:scale-110'}`}></div>
                  <div className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                     isRecording 
-                     ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-400 text-white' 
-                     : 'bg-gradient-to-br from-gray-800 to-black border-white/20 text-gray-300 group-hover:border-blue-400/50 group-hover:text-white'
+                     isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-400 text-white' : 'bg-gradient-to-br from-gray-800 to-black border-white/20 text-gray-300 group-hover:border-blue-400/50 group-hover:text-white'
                  }`}>
                      {aiState === 'thinking' ? (
                          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     ) : isRecording ? (
-                         <StopIcon className="w-8 h-8 fill-current" />
-                     ) : (
-                         <MicIcon className="w-8 h-8" />
-                     )}
+                     ) : isRecording ? <StopIcon className="w-8 h-8 fill-current" /> : <MicIcon className="w-8 h-8" />}
                  </div>
             </button>
         </div>
@@ -624,7 +704,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user }) => {
             </div>
       )}
 
-      {feedbackReport && <FeedbackModal report={feedbackReport} onClose={handleCloseModal} />}
+      {feedbackReport && <FeedbackModal report={feedbackReport} onClose={() => {setFeedbackReport(null); setSelectedScenario(null);}} />}
     </div>
   );
 };

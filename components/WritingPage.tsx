@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { User, WritingReport } from '../types';
 import { getFeedbackOnWriting } from '../services/geminiService';
-import { LoaderIcon, WritingIcon } from './icons';
+import { LoaderIcon, WritingIcon, LogoutIcon } from './icons';
 
 interface WritingPageProps {
   user: User;
+  onLogout: () => void;
 }
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -16,7 +17,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-const WritingPage: React.FC<WritingPageProps> = ({ user }) => {
+const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -71,8 +72,17 @@ const WritingPage: React.FC<WritingPageProps> = ({ user }) => {
                         <h1 className="text-xl font-bold text-white tracking-tight">Writing Lab</h1>
                         <p className="text-xs text-gray-400">Handwriting Analysis & Correction</p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
-                        <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt={user.name} />
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={onLogout}
+                            className="text-gray-400 hover:text-red-400 transition-colors p-2"
+                            title="Log Out"
+                        >
+                            <LogoutIcon className="w-5 h-5" />
+                        </button>
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
+                            <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt={user.name} />
+                        </div>
                     </div>
                 </div>
             </header>

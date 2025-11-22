@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { FeedbackReport, User, WritingReport, VocabularyItem } from '../types';
 import ProgressChart from './ProgressChart';
-import { UserIcon, BotIcon, BookIcon } from './icons';
+import { UserIcon, BotIcon, BookIcon, LogoutIcon } from './icons';
 
 type Tab = 'speaking' | 'writing' | 'vocab';
 
-const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
+const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [speakingReports, setSpeakingReports] = useState<FeedbackReport[]>([]);
   const [writingReports, setWritingReports] = useState<WritingReport[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('speaking');
@@ -54,8 +53,17 @@ const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
                 <h1 className="text-xl font-bold text-white">Dashboard</h1>
                 <p className="text-xs text-gray-400">Track your improvement</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
-                <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt="User" />
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={onLogout}
+                    className="text-gray-400 hover:text-red-400 transition-colors p-2"
+                    title="Log Out"
+                >
+                    <LogoutIcon className="w-5 h-5" />
+                </button>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
+                    <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt="User" />
+                </div>
             </div>
         </div>
       </header>
