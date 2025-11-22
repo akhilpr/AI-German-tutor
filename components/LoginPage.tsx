@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GoogleIcon } from './icons';
 import { User } from '../types';
 
@@ -7,38 +7,76 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const handleLoginClick = () => {
-    const dummyUser: User = {
-      name: 'Ralph Edwards',
-      email: 'ralph.edwards@example.com',
-      photoUrl: `https://i.pravatar.cc/150?u=ralphedwards`,
-    };
-    onLogin(dummyUser);
+    setIsAnimating(true);
+    // Simulate network delay for realism and transition
+    setTimeout(() => {
+        const dummyUser: User = {
+        name: 'Alex Student',
+        email: 'alex.student@example.com',
+        photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4`,
+        };
+        onLogin(dummyUser);
+    }, 1200);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-sm p-6 sm:p-8 space-y-8 glass-card">
-        <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-                Hallo!
-            </h1>
-            <p className="mt-3 text-base sm:text-lg text-gray-300">
-                Welcome to your AI German Tutor.
-            </p>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-pulse" style={{animationDelay: '1s'}}></div>
+
+      <div className="w-full max-w-md relative z-10 glass-card p-10 rounded-[2.5rem] border border-white/10 shadow-2xl animate-fade-in-up flex flex-col items-center">
+        
+        {/* Logo/Icon */}
+        <div className="w-24 h-24 mb-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
+            <div className="absolute inset-0 rounded-full border border-white/20"></div>
+            <span className="text-5xl">🇩🇪</span>
         </div>
-        <div className="mt-8">
+
+        <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 text-center">
+            Nova
+        </h1>
+        <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200 font-medium mb-8 text-center">
+            Your Personal AI German Tutor
+        </p>
+
+        <p className="text-gray-400 text-center mb-10 leading-relaxed text-sm">
+            Master fluency with real-time conversation, instant pronunciation correction, and handwriting analysis.
+        </p>
+
+        <div className="w-full space-y-4">
             <button
-            onClick={handleLoginClick}
-            className="w-full inline-flex items-center justify-center px-4 py-3 text-base font-semibold text-white bg-gray-700/50 border border-gray-600 rounded-xl shadow-sm hover:bg-gray-600/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 focus:ring-offset-gray-900 transition-colors"
+                onClick={handleLoginClick}
+                disabled={isAnimating}
+                className={`w-full group relative flex items-center justify-center px-6 py-4 text-base font-bold text-white transition-all duration-300 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-white/20 active:scale-95 overflow-hidden ${isAnimating ? 'opacity-80' : ''}`}
             >
-            <GoogleIcon className="w-6 h-6 mr-3" />
-            Sign in with Google
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {isAnimating ? (
+                    <div className="flex items-center gap-3">
+                        <svg className="animate-spin h-5 w-5 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Starting Session...</span>
+                    </div>
+                ) : (
+                    <>
+                        <GoogleIcon className="w-5 h-5 mr-3" />
+                        <span>Continue with Google</span>
+                    </>
+                )}
             </button>
         </div>
-        <p className="mt-6 text-xs text-center text-gray-400">
-          Practice your conversation skills and get instant feedback.
-        </p>
+        
+        <div className="mt-8 flex items-center justify-center gap-2 opacity-50">
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce"></div>
+            <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="h-1.5 w-1.5 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+        </div>
       </div>
     </div>
   );

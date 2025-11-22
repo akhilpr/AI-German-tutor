@@ -1,3 +1,4 @@
+
 // FIX: Removed self-import of `User` type that caused a conflict.
 
 export interface User {
@@ -41,6 +42,17 @@ export interface WritingReport {
   score: number;
   errors: WritingReportError[];
   improvementTips: string[];
+}
+
+export interface Scenario {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  systemPrompt: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  colorFrom: string;
+  colorTo: string;
 }
 
 export enum AppView {

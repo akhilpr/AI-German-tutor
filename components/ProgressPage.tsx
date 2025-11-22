@@ -1,57 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FeedbackReport, User, WritingReport, WritingReportError } from '../types';
+import { FeedbackReport, User, WritingReport } from '../types';
 import ProgressChart from './ProgressChart';
 import { UserIcon, BotIcon } from './icons';
 
 type Tab = 'speaking' | 'writing';
 
-const WritingReportModal: React.FC<{ report: WritingReport; onClose: () => void }> = ({ report, onClose }) => {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-2" onClick={onClose}>
-            <div className="relative w-full max-w-4xl max-h-[90vh] p-4 sm:p-8 m-2 glass-card overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg text-sm p-1.5" aria-label="Close modal">
-                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
-                </button>
-                <h3 className="text-xl sm:text-2xl font-bold mb-4 pr-8">Writing Feedback from {new Date(report.date).toLocaleDateString()}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-4">
-                        <img src={report.imageUrl} alt="User's writing" className="rounded-lg border border-gray-700 max-h-80 w-full object-contain" />
-                        <div className="p-4 bg-black/20 rounded-lg">
-                            <h4 className="text-lg font-semibold mb-2">Transcribed Text</h4>
-                            <p className="text-gray-300 whitespace-pre-wrap font-serif italic text-sm sm:text-base">"{report.transcribedText}"</p>
-                        </div>
-                    </div>
-                     <div className="space-y-4">
-                        <div className="p-4 bg-black/20 rounded-lg">
-                            <h4 className="text-lg font-semibold mb-2">Corrections</h4>
-                            <div className="space-y-3">
-                               {report.errors.length > 0 ? report.errors.map((err, index) => (
-                                    <div key={index} className="border-l-4 border-purple-500 pl-3">
-                                        <p className="text-red-400 text-sm sm:text-base"><span className="line-through">{err.error}</span> → <span className="text-green-400 font-semibold">{err.correction}</span></p>
-                                        <p className="text-gray-400 text-xs sm:text-sm mt-1">{err.explanation}</p>
-                                    </div>
-                                )) : <p className="text-gray-400">No errors found!</p>}
-                            </div>
-                        </div>
-                         <div className="p-4 bg-black/20 rounded-lg">
-                            <h4 className="text-lg font-semibold mb-2">Improvement Tips</h4>
-                            <ul className="space-y-2 list-disc list-inside text-gray-300 text-sm sm:text-base">
-                                {report.improvementTips.map((tip, index) => <li key={index}>{tip}</li>)}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
 const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
   const [speakingReports, setSpeakingReports] = useState<FeedbackReport[]>([]);
   const [writingReports, setWritingReports] = useState<WritingReport[]>([]);
-  const [selectedSpeakingReport, setSelectedSpeakingReport] = useState<FeedbackReport | null>(null);
-  const [selectedWritingReport, setSelectedWritingReport] = useState<WritingReport | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('speaking');
 
   useEffect(() => {
@@ -61,133 +17,149 @@ const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
       const storedWriting = localStorage.getItem('german_tutor_writing_reports');
       if (storedWriting) setWritingReports(JSON.parse(storedWriting));
     } catch (error) {
-      console.error("Failed to parse reports from localStorage", error);
+      console.error("Failed to parse reports", error);
     }
   }, []);
 
   const speakingChartData = speakingReports.map(report => ({
-    name: new Date(report.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    name: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     overall: report.scores.overall,
     fluency: report.scores.fluency,
   }));
+  
   const speakingLines = [
-    { dataKey: 'overall', name: 'Overall Score', stroke: '#c084fc', strokeWidth: 3 },
-    { dataKey: 'fluency', name: 'Fluency', stroke: '#f472b6', strokeWidth: 1 }
+    { dataKey: 'overall', name: 'Overall', stroke: '#a855f7', strokeWidth: 3 },
+    { dataKey: 'fluency', name: 'Fluency', stroke: '#3b82f6', strokeWidth: 2 }
   ];
 
   const writingChartData = writingReports.map(report => ({
-      name: new Date(report.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      name: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
       score: report.score
   }));
-  const writingLines = [{ dataKey: 'score', name: 'Writing Score', stroke: '#60a5fa', strokeWidth: 3 }];
+  const writingLines = [{ dataKey: 'score', name: 'Score', stroke: '#22c55e', strokeWidth: 3 }];
 
   return (
-    <div className="min-h-screen text-gray-100 pb-28">
-      <header className="absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto py-4 px-4 flex justify-between items-center">
-            <h1 className="text-xl sm:text-2xl font-bold">Your Progress</h1>
-            <div className="flex items-center">
-                <span className="mr-3 font-medium hidden sm:inline">{user.name}</span>
-                <img className="h-10 w-10 rounded-full" src={user.photoUrl} alt="User" />
+    <div className="min-h-screen text-gray-100 pb-36 overflow-y-auto">
+      <header className="sticky top-0 z-20 backdrop-blur-xl border-b border-white/5 bg-black/40">
+        <div className="max-w-4xl mx-auto py-5 px-6 flex justify-between items-center">
+            <div>
+                <h1 className="text-xl font-bold text-white">Dashboard</h1>
+                <p className="text-xs text-gray-400">Track your improvement</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
+                <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt="User" />
             </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto pt-20 py-8 px-4">
-        <div className="mb-6">
-            <div className="flex space-x-1 sm:space-x-2 border-b border-white/10">
-                <button onClick={() => setActiveTab('speaking')} className={`px-3 sm:px-4 py-2 text-base sm:text-lg font-medium transition-colors ${activeTab === 'speaking' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}>Speaking</button>
-                <button onClick={() => setActiveTab('writing')} className={`px-3 sm:px-4 py-2 text-base sm:text-lg font-medium transition-colors ${activeTab === 'writing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}>Writing</button>
-            </div>
+      <main className="max-w-4xl mx-auto pt-8 px-4 space-y-8 animate-fade-in-up">
+        {/* Toggle */}
+        <div className="flex p-1.5 bg-white/5 rounded-2xl w-full max-w-sm mx-auto border border-white/5">
+            <button 
+                onClick={() => setActiveTab('speaking')} 
+                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'speaking' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+                Speaking
+            </button>
+            <button 
+                onClick={() => setActiveTab('writing')} 
+                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'writing' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+                Writing
+            </button>
         </div>
 
         {activeTab === 'speaking' && (
-             <div className="space-y-6 sm:space-y-8">
-                <div className="glass-card p-4 sm:p-6 lg:p-8">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Speaking Score Trend</h2>
+             <div className="space-y-8">
+                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-lg font-bold text-gray-200">Speaking Trends</h2>
+                        <div className="text-right">
+                             <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                                {speakingReports.length}
+                             </div>
+                             <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sessions</div>
+                        </div>
+                    </div>
                     <ProgressChart data={speakingChartData} lines={speakingLines} />
                 </div>
-                <div className="glass-card p-4 sm:p-6 lg:p-8">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Speaking Session History</h2>
-                    <div className="space-y-4">
-                        {speakingReports.length > 0 ? (
-                            speakingReports.slice().reverse().map(report => (
-                                <div key={report.id} className="p-4 bg-black/20 border border-white/10 rounded-xl cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setSelectedSpeakingReport(report)}>
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                                        <div>
-                                            <p className="font-semibold text-base sm:text-lg text-purple-300">Session from {new Date(report.date).toLocaleString()}</p>
-                                            <p className="text-sm text-gray-400">{report.transcript.length} turns in conversation</p>
-                                        </div>
-                                        <div className="text-left sm:text-right mt-2 sm:mt-0">
-                                            <p className="font-bold text-xl sm:text-2xl">{report.scores.overall.toFixed(1)}</p>
-                                            <p className="text-sm text-gray-400">Overall Score</p>
-                                        </div>
+                
+                <h2 className="text-lg font-bold text-gray-300 px-2 uppercase tracking-wide text-xs">Recent Sessions</h2>
+                <div className="space-y-4">
+                    {speakingReports.length > 0 ? (
+                        speakingReports.slice().reverse().map(report => (
+                            <div key={report.id} className="bg-white/5 p-6 rounded-3xl flex justify-between items-center hover:bg-white/10 transition-all border border-white/5 group">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                        <span className="font-bold text-white text-lg">{new Date(report.date).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'})}</span>
                                     </div>
+                                    <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors flex items-center gap-2">
+                                        <span>{new Date(report.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                                        <span>{report.transcript.length} turns</span>
+                                    </p>
                                 </div>
-                            ))
-                        ) : <p className="text-center text-gray-400 py-8">No speaking history found.</p>}
-                    </div>
+                                <div className="text-right bg-black/20 px-4 py-2 rounded-2xl border border-white/5">
+                                    <div className="text-2xl font-bold text-white">{report.scores.overall.toFixed(1)}</div>
+                                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Score</div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                            No speaking sessions recorded yet.
+                        </div>
+                    )}
                 </div>
             </div>
         )}
         
         {activeTab === 'writing' && (
-            <div className="space-y-6 sm:space-y-8">
-                <div className="glass-card p-4 sm:p-6 lg:p-8">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Writing Score Trend</h2>
+            <div className="space-y-8">
+                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+                    <div className="flex items-center justify-between mb-8">
+                         <h2 className="text-lg font-bold text-gray-200">Writing Trends</h2>
+                         <div className="text-right">
+                             <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
+                                {writingReports.length}
+                             </div>
+                             <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Docs Scanned</div>
+                        </div>
+                    </div>
                     <ProgressChart data={writingChartData} lines={writingLines} />
                 </div>
-                <div className="glass-card p-4 sm:p-6 lg:p-8">
-                    <h2 className="text-lg sm:text-xl font-semibold mb-4">Writing Practice History</h2>
-                     <div className="space-y-4">
-                        {writingReports.length > 0 ? (
-                            writingReports.slice().reverse().map(report => (
-                                <div key={report.id} className="p-4 bg-black/20 border border-white/10 rounded-xl cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setSelectedWritingReport(report)}>
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <img src={report.imageUrl} alt="writing thumbnail" className="w-16 h-16 object-cover rounded-lg"/>
-                                            <div>
-                                                <p className="font-semibold text-base sm:text-lg text-blue-300">Submission from {new Date(report.date).toLocaleString()}</p>
-                                                <p className="text-sm text-gray-400">View feedback and corrections</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0">
-                                            <p className="font-bold text-xl sm:text-2xl">{report.score.toFixed(1)}</p>
-                                            <p className="text-sm text-gray-400">Score</p>
-                                        </div>
+
+                <h2 className="text-lg font-bold text-gray-300 px-2 uppercase tracking-wide text-xs">History</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     {writingReports.length > 0 ? (
+                        writingReports.slice().reverse().map(report => (
+                            <div key={report.id} className="bg-white/5 p-5 rounded-3xl flex gap-5 hover:bg-white/10 transition-colors border border-white/5">
+                                <img src={report.imageUrl} alt="writing" className="w-24 h-24 object-cover rounded-2xl bg-gray-800 border border-white/10" />
+                                <div className="flex-1 flex flex-col justify-between py-1">
+                                    <div>
+                                        <p className="font-bold text-white mb-1">{new Date(report.date).toLocaleDateString()}</p>
+                                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed italic">"{report.transcribedText}"</p>
+                                    </div>
+                                    <div className="flex justify-between items-end mt-3">
+                                        <span className={`text-xs px-2 py-1 rounded-lg ${report.errors.length === 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                            {report.errors.length} corrections
+                                        </span>
+                                        <span className="text-xl font-bold text-white">{report.score}</span>
                                     </div>
                                 </div>
-                            ))
-                        ) : <p className="text-center text-gray-400 py-8">No writing history found.</p>}
-                    </div>
+                            </div>
+                        ))
+                    ) : (
+                         <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                            No writing submissions yet.
+                        </div>
+                    )}
                 </div>
             </div>
         )}
 
       </main>
-
-      {selectedSpeakingReport && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-2" onClick={() => setSelectedSpeakingReport(null)}>
-            <div className="relative w-full max-w-2xl max-h-[90vh] p-4 sm:p-8 m-2 glass-card overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                 <button onClick={() => setSelectedSpeakingReport(null)} className="absolute top-4 right-4 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg text-sm p-1.5" aria-label="Close transcript modal">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
-                </button>
-                <h3 className="text-xl sm:text-2xl font-bold mb-4 pr-8">Transcript for {new Date(selectedSpeakingReport.date).toLocaleDateString()}</h3>
-                <div className="space-y-4 pr-2">
-                    {selectedSpeakingReport.transcript.map((turn, index) => (
-                        <div key={index} className={`flex items-end gap-2 sm:gap-3 ${turn.speaker === 'user' ? 'justify-end' : ''}`}>
-                             {turn.speaker === 'ai' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center mb-1"><BotIcon className="w-5 h-5 text-purple-300" /></div>}
-                            <div className={`p-3 rounded-xl max-w-xs sm:max-w-md text-white ${ turn.speaker === 'user' ? 'bg-gradient-to-r from-pink-500 to-purple-600 rounded-br-none' : 'bg-gray-700/80 rounded-bl-none'}`}>
-                                <p className="text-sm">{turn.text}</p>
-                            </div>
-                            {turn.speaker === 'user' && <img src={user.photoUrl} alt="You" className="flex-shrink-0 w-8 h-8 rounded-full mb-1" />}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-      )}
-      {selectedWritingReport && <WritingReportModal report={selectedWritingReport} onClose={() => setSelectedWritingReport(null)} />}
     </div>
   );
 };

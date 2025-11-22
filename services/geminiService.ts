@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { FeedbackReport, ConversationTurn, WritingReport } from '../types';
 
 if (!process.env.API_KEY) {
@@ -8,19 +8,23 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function getFeedbackOnConversation(transcript: ConversationTurn[]): Promise<Omit<FeedbackReport, 'id' | 'date' | 'transcript'>> {
-    const conversationText = transcript.map(turn => `${turn.speaker === 'user' ? 'Student' : 'Tutor'}: ${turn.text}`).join('\n');
+    // Limit transcript context if it's too huge, though typically fine for text
+    const conversationText = transcript.map(turn => `${turn.speaker === 'user' ? 'Student' : 'Tutor (Nova)'}: ${turn.text}`).join('\n');
 
     const prompt = `
-        You are an expert German language examiner. Based on the following conversation transcript between a student and a tutor, please provide a detailed and honest evaluation of the student's German speaking skills.
-
-        Conversation:
+        You are a German language expert examiner evaluating a student's conversation with an AI tutor named Nova.
+        
+        Transcript:
         ${conversationText}
 
         ---
-        Please provide your evaluation in JSON format. The JSON object should include:
-        1. "scores": An object with ratings out of 10 for "fluency", "pronunciation", "grammar", and an "overall" score.
-        2. "weakPoints": An array of strings, each describing a specific area where the student needs improvement.
-        3. "improvementTips": An array of strings, each providing actionable advice for the student to improve.
+        Requirements:
+        1. Evaluate based on CEFR standards (A1-B2 range).
+        2. "scores": Rate strictly out of 10.
+        3. "weakPoints": Identify specific grammatical errors (e.g., "Used 'der' instead of 'den' in accusative").
+        4. "improvementTips": Actionable grammar or vocabulary advice.
+        
+        Respond ONLY in valid JSON matching the schema.
     `;
 
     try {
@@ -56,17 +60,10 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
             },
         });
         
-        const jsonText = response.text.trim();
+        const jsonText = response.text?.trim();
+        if (!jsonText) throw new Error("Empty response from AI");
+        
         const feedbackData = JSON.parse(jsonText);
-
-        if (
-            !feedbackData.scores ||
-            typeof feedbackData.scores.overall !== 'number' ||
-            !Array.isArray(feedbackData.weakPoints) ||
-            !Array.isArray(feedbackData.improvementTips)
-        ) {
-            throw new Error("Invalid feedback format received from API");
-        }
 
         return feedbackData;
 
@@ -83,19 +80,14 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
 
     const textPart = {
         text: `
-            You are an expert German language examiner. Analyze the provided image of handwritten German text.
-            Your task is to:
-            1. Transcribe the German text from the image accurately.
-            2. Evaluate the transcribed text for grammatical errors, spelling mistakes, style, and overall quality.
-            3. Provide a single, overall score out of 10.
-            4. Identify specific errors. For each error, provide the incorrect part, the correction, and a brief explanation.
-            5. Give a list of actionable improvement tips.
-
-            Provide your response in a structured JSON format. The JSON object must contain:
-            - "transcribedText": A string with the full text you transcribed from the image.
-            - "score": A number from 0 to 10.
-            - "errors": An array of objects, where each object has "error" (string), "correction" (string), and "explanation" (string).
-            - "improvementTips": An array of strings.
+            Act as a strict German language teacher correcting homework.
+            
+            1. Transcribe the German text exactly as written in the image.
+            2. Identify EVERY spelling, grammar, or syntax error.
+            3. For each error, provide the "correction" and a brief English "explanation" of the rule (e.g., "Dative case required here").
+            4. If the text is perfect, say so in the tips.
+            
+            Return valid JSON.
         `,
     };
 
@@ -115,9 +107,9 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    error: { type: Type.STRING },
-                                    correction: { type: Type.STRING },
-                                    explanation: { type: Type.STRING },
+                                    error: { type: Type.STRING, description: "The segment with the mistake" },
+                                    correction: { type: Type.STRING, description: "The correct German form" },
+                                    explanation: { type: Type.STRING, description: "Grammar rule explanation" },
                                 },
                                 required: ["error", "correction", "explanation"],
                             },
@@ -132,18 +124,10 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
             },
         });
 
-        const jsonText = response.text.trim();
+        const jsonText = response.text?.trim();
+        if (!jsonText) throw new Error("Empty response from AI");
+
         const writingData = JSON.parse(jsonText);
-
-        if (
-            typeof writingData.transcribedText !== 'string' ||
-            typeof writingData.score !== 'number' ||
-            !Array.isArray(writingData.errors) ||
-            !Array.isArray(writingData.improvementTips)
-        ) {
-            throw new Error("Invalid writing feedback format received from API");
-        }
-
         return writingData;
 
     } catch (error) {

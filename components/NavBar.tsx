@@ -7,42 +7,31 @@ interface NavBarProps {
   onNavigate: (view: AppView) => void;
 }
 
-const NavItem: React.FC<{
-  label: string;
-  view: AppView;
-  currentView: AppView;
-  onNavigate: (view: AppView) => void;
-  children: React.ReactNode;
-}> = ({ label, view, currentView, onNavigate, children }) => {
-  const isActive = currentView === view;
-  return (
-    <button
-      onClick={() => onNavigate(view)}
-      className={`flex flex-col items-center justify-center w-full py-2 px-1 rounded-lg transition-colors duration-200 ${isActive ? 'text-purple-400' : 'text-gray-400 hover:text-white'}`}
-      aria-current={isActive ? 'page' : undefined}
-    >
-      <div className={`relative w-8 h-8 flex items-center justify-center`}>
-        {isActive && <div className="absolute inset-0 bg-purple-500/30 rounded-full blur-md"></div>}
-        {children}
-      </div>
-      <span className="text-xs font-medium mt-1">{label}</span>
-    </button>
-  );
-};
-
 const NavBar: React.FC<NavBarProps> = ({ currentView, onNavigate }) => {
+  const items = [
+      { id: AppView.CONVERSATION, label: 'Speak', icon: MicIcon },
+      { id: AppView.WRITING, label: 'Write', icon: WritingIcon },
+      { id: AppView.PROGRESS, label: 'Progress', icon: ChartIcon },
+  ];
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 p-2 sm:p-3 z-20">
-      <div className="max-w-xs sm:max-w-md mx-auto glass-card flex justify-around items-center p-1">
-        <NavItem label="Speak" view={AppView.CONVERSATION} currentView={currentView} onNavigate={onNavigate}>
-          <MicIcon className="w-6 h-6" />
-        </NavItem>
-        <NavItem label="Write" view={AppView.WRITING} currentView={currentView} onNavigate={onNavigate}>
-          <WritingIcon className="w-6 h-6" />
-        </NavItem>
-        <NavItem label="Progress" view={AppView.PROGRESS} currentView={currentView} onNavigate={onNavigate}>
-          <ChartIcon className="w-6 h-6" />
-        </NavItem>
+    <nav className="fixed bottom-8 left-0 right-0 z-50 flex justify-center pointer-events-none">
+      <div className="nav-glass px-3 py-3 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] flex items-center gap-2 pointer-events-auto transition-transform hover:scale-105 duration-300">
+        {items.map((item) => {
+            const isActive = currentView === item.id;
+            return (
+                <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    className={`relative w-20 h-14 rounded-full flex flex-col items-center justify-center transition-all duration-500 group overflow-hidden ${isActive ? 'bg-white/10 shadow-inner border border-white/5' : ''}`}
+                >
+                    <div className={`absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'group-hover:opacity-30'}`}></div>
+                    
+                    <item.icon className={`w-6 h-6 mb-1 transition-all duration-300 z-10 ${isActive ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]' : 'text-gray-400 group-hover:text-gray-200'}`} />
+                    <span className={`text-[10px] font-semibold tracking-wide transition-colors duration-300 z-10 ${isActive ? 'text-white' : 'text-gray-500'}`}>{item.label}</span>
+                </button>
+            )
+        })}
       </div>
     </nav>
   );
