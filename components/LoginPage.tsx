@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { GoogleIcon } from './icons';
-import { User } from '../types';
+import { User, UserTrack } from '../types';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -8,31 +9,46 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<UserTrack>('general');
 
   const handleLoginClick = () => {
     setIsAnimating(true);
-    // Simulate network delay for realism and transition
     setTimeout(() => {
         const dummyUser: User = {
-        name: 'Alex Student',
-        email: 'alex.student@example.com',
-        photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4`,
+            name: 'Arjun Nair',
+            email: 'arjun.nair@example.com',
+            photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4`,
+            track: selectedTrack,
+            role: 'student'
         };
         onLogin(dummyUser);
     }, 1200);
   };
 
+  // Hidden shortcut to login as a "Teacher" for demo purposes (Clicking the logo)
+  const handleTeacherLogin = () => {
+      setIsAnimating(true);
+      setTimeout(() => {
+          const dummyUser: User = {
+              name: 'Frau Lakshmi',
+              email: 'admin@institute.com',
+              photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Zoey&backgroundColor=ffdfbf`,
+              track: 'general',
+              role: 'teacher'
+          };
+          onLogin(dummyUser);
+      }, 1000);
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-pulse" style={{animationDelay: '1s'}}></div>
 
-      <div className="w-full max-w-md relative z-10 glass-card p-10 rounded-[2.5rem] border border-white/10 shadow-2xl animate-fade-in-up flex flex-col items-center">
+      <div className="w-full max-w-md relative z-10 glass-card p-8 sm:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl animate-fade-in-up flex flex-col items-center">
         
-        {/* Logo/Icon */}
-        <div className="w-24 h-24 mb-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative">
-            <div className="absolute inset-0 rounded-full border border-white/20"></div>
+        <div onClick={handleTeacherLogin} className="cursor-pointer w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative group">
+            <div className="absolute inset-0 rounded-full border border-white/20 group-hover:border-white/40 transition-colors"></div>
             <span className="text-5xl">🇩🇪</span>
         </div>
 
@@ -40,12 +56,46 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             Nova
         </h1>
         <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200 font-medium mb-8 text-center">
-            Your Personal AI German Tutor
+            German Fluency Accelerator
         </p>
 
-        <p className="text-gray-400 text-center mb-10 leading-relaxed text-sm">
-            Master fluency with real-time conversation, instant pronunciation correction, and handwriting analysis.
-        </p>
+        {/* Track Selector */}
+        <div className="w-full mb-8 space-y-3">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold text-center mb-4">Select Your Goal</p>
+            
+            <button 
+                onClick={() => setSelectedTrack('nursing')}
+                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'nursing' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+                <div className="text-2xl">🩺</div>
+                <div className="text-left">
+                    <div className={`font-bold ${selectedTrack === 'nursing' ? 'text-white' : 'text-gray-300'}`}>Nursing (Pflege)</div>
+                    <div className="text-xs text-gray-400">For B2 Pflege exams & Hospital work</div>
+                </div>
+            </button>
+
+            <button 
+                onClick={() => setSelectedTrack('academic')}
+                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'academic' ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(147,51,234,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+                <div className="text-2xl">🎓</div>
+                <div className="text-left">
+                    <div className={`font-bold ${selectedTrack === 'academic' ? 'text-white' : 'text-gray-300'}`}>Study Abroad</div>
+                    <div className="text-xs text-gray-400">University admission, TestDaF, Visa</div>
+                </div>
+            </button>
+
+            <button 
+                onClick={() => setSelectedTrack('general')}
+                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'general' ? 'bg-green-600/20 border-green-500 shadow-[0_0_20px_rgba(22,163,74,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+            >
+                <div className="text-2xl">🌍</div>
+                <div className="text-left">
+                    <div className={`font-bold ${selectedTrack === 'general' ? 'text-white' : 'text-gray-300'}`}>General Learning</div>
+                    <div className="text-xs text-gray-400">Travel, A1-B1 Basics, Hobby</div>
+                </div>
+            </button>
+        </div>
 
         <div className="w-full space-y-4">
             <button
@@ -61,12 +111,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Starting Session...</span>
+                        <span>Setting up Profile...</span>
                     </div>
                 ) : (
                     <>
                         <GoogleIcon className="w-5 h-5 mr-3" />
-                        <span>Continue with Google</span>
+                        <span>Start Learning</span>
                     </>
                 )}
             </button>

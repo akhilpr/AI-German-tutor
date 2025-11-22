@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, AppView } from './types';
 import LoginPage from './components/LoginPage';
 import ConversationPage from './components/ConversationPage';
 import ProgressPage from './components/ProgressPage';
 import WritingPage from './components/WritingPage';
+import TeacherDashboard from './components/TeacherDashboard';
 import NavBar from './components/NavBar';
 import { LoaderIcon } from './components/icons';
 
@@ -16,8 +18,14 @@ const App: React.FC = () => {
     try {
       const storedUser = localStorage.getItem('german_tutor_user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        setCurrentView(AppView.CONVERSATION);
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        // Route based on role
+        if (parsedUser.role === 'teacher') {
+            setCurrentView(AppView.TEACHER_DASHBOARD);
+        } else {
+            setCurrentView(AppView.CONVERSATION);
+        }
       } else {
         setCurrentView(AppView.LOGIN);
       }
@@ -33,7 +41,11 @@ const App: React.FC = () => {
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
     localStorage.setItem('german_tutor_user', JSON.stringify(loggedInUser));
-    setCurrentView(AppView.CONVERSATION);
+    if (loggedInUser.role === 'teacher') {
+        setCurrentView(AppView.TEACHER_DASHBOARD);
+    } else {
+        setCurrentView(AppView.CONVERSATION);
+    }
   };
 
   const renderView = () => {
@@ -56,6 +68,8 @@ const App: React.FC = () => {
         return <WritingPage user={user} />;
       case AppView.PROGRESS:
         return <ProgressPage user={user} />;
+      case AppView.TEACHER_DASHBOARD:
+        return <TeacherDashboard user={user} />;
       default:
         return <ConversationPage user={user} />;
     }
@@ -66,7 +80,7 @@ const App: React.FC = () => {
        <div className="flex-1 h-full w-full overflow-y-auto relative">
         {renderView()}
       </div>
-      {!isLoading && currentView !== AppView.LOGIN && user && (
+      {!isLoading && currentView !== AppView.LOGIN && user && user.role !== 'teacher' && (
         <NavBar currentView={currentView} onNavigate={setCurrentView} />
       )}
     </div>

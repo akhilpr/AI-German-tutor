@@ -1,11 +1,20 @@
+
 import React from 'react';
 import { AppView } from '../types';
-import { MicIcon, WritingIcon, ChartIcon } from './icons';
+import { MicIcon, WritingIcon, ChartIcon, GoogleIcon } from './icons';
 
 interface NavBarProps {
   currentView: AppView;
   onNavigate: (view: AppView) => void;
 }
+
+// Simple Classroom Icon
+const ClassroomIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
+);
 
 const NavBar: React.FC<NavBarProps> = ({ currentView, onNavigate }) => {
   const items = [
@@ -13,6 +22,9 @@ const NavBar: React.FC<NavBarProps> = ({ currentView, onNavigate }) => {
       { id: AppView.WRITING, label: 'Write', icon: WritingIcon },
       { id: AppView.PROGRESS, label: 'Progress', icon: ChartIcon },
   ];
+  
+  // If in Teacher Dashboard, mostly don't show this nav, or show a back button
+  if (currentView === AppView.TEACHER_DASHBOARD) return null;
 
   return (
     <nav className="fixed bottom-8 left-0 right-0 z-50 flex justify-center pointer-events-none">

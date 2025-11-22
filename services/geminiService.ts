@@ -23,6 +23,7 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
         2. "scores": Rate strictly out of 10.
         3. "weakPoints": Identify specific grammatical errors (e.g., "Used 'der' instead of 'den' in accusative").
         4. "improvementTips": Actionable grammar or vocabulary advice.
+        5. "newVocabulary": Extract 3-5 important German words or phrases that were either used incorrectly or related to the topic that the user should learn. Provide English translation and a short German example sentence.
         
         Respond ONLY in valid JSON matching the schema.
     `;
@@ -53,9 +54,21 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
                         improvementTips: {
                             type: Type.ARRAY,
                             items: { type: Type.STRING }
+                        },
+                        newVocabulary: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    word: { type: Type.STRING },
+                                    translation: { type: Type.STRING },
+                                    context: { type: Type.STRING },
+                                },
+                                required: ["word", "translation", "context"]
+                            }
                         }
                     },
-                    required: ["scores", "weakPoints", "improvementTips"]
+                    required: ["scores", "weakPoints", "improvementTips", "newVocabulary"]
                 },
             },
         });

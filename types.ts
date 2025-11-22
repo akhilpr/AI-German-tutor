@@ -1,10 +1,12 @@
 
-// FIX: Removed self-import of `User` type that caused a conflict.
+export type UserTrack = 'general' | 'nursing' | 'academic';
 
 export interface User {
   name: string;
   email: string;
   photoUrl: string;
+  track: UserTrack;
+  role: 'student' | 'teacher'; // Added role for B2B logic
 }
 
 export interface FeedbackScores {
@@ -14,12 +16,19 @@ export interface FeedbackScores {
   overall: number;
 }
 
+export interface VocabularyItem {
+  word: string;
+  translation: string;
+  context: string; // Example sentence using the word
+}
+
 export interface FeedbackReport {
   id: string;
   date: string;
   scores: FeedbackScores;
   weakPoints: string[];
   improvementTips: string[];
+  newVocabulary: VocabularyItem[]; // NEW: Auto-generated vocab list
   transcript: ConversationTurn[];
 }
 
@@ -50,9 +59,11 @@ export interface Scenario {
   description: string;
   emoji: string;
   systemPrompt: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  difficulty: 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+  track: UserTrack | 'all';
   colorFrom: string;
   colorTo: string;
+  isExamPrep?: boolean;
 }
 
 export enum AppView {
@@ -60,4 +71,5 @@ export enum AppView {
   CONVERSATION,
   PROGRESS,
   WRITING,
+  TEACHER_DASHBOARD,
 }

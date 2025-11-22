@@ -1,19 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { FeedbackReport, User, WritingReport } from '../types';
-import ProgressChart from './ProgressChart';
-import { UserIcon, BotIcon } from './icons';
 
-type Tab = 'speaking' | 'writing';
+import React, { useState, useEffect } from 'react';
+import { FeedbackReport, User, WritingReport, VocabularyItem } from '../types';
+import ProgressChart from './ProgressChart';
+import { UserIcon, BotIcon, BookIcon } from './icons';
+
+type Tab = 'speaking' | 'writing' | 'vocab';
 
 const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
   const [speakingReports, setSpeakingReports] = useState<FeedbackReport[]>([]);
   const [writingReports, setWritingReports] = useState<WritingReport[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('speaking');
+  const [vocabList, setVocabList] = useState<VocabularyItem[]>([]);
 
   useEffect(() => {
     try {
       const storedSpeaking = localStorage.getItem('german_tutor_reports');
-      if (storedSpeaking) setSpeakingReports(JSON.parse(storedSpeaking));
+      if (storedSpeaking) {
+          const parsed = JSON.parse(storedSpeaking);
+          setSpeakingReports(parsed);
+          // Extract all vocabulary from all reports
+          const allVocab = parsed.flatMap((r: FeedbackReport) => r.newVocabulary || []);
+          setVocabList(allVocab.reverse()); // Newest first
+      }
       const storedWriting = localStorage.getItem('german_tutor_writing_reports');
       if (storedWriting) setWritingReports(JSON.parse(storedWriting));
     } catch (error) {
@@ -54,7 +62,7 @@ const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
 
       <main className="max-w-4xl mx-auto pt-8 px-4 space-y-8 animate-fade-in-up">
         {/* Toggle */}
-        <div className="flex p-1.5 bg-white/5 rounded-2xl w-full max-w-sm mx-auto border border-white/5">
+        <div className="flex p-1.5 bg-white/5 rounded-2xl w-full max-w-md mx-auto border border-white/5">
             <button 
                 onClick={() => setActiveTab('speaking')} 
                 className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'speaking' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
@@ -66,6 +74,12 @@ const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
                 className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'writing' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
             >
                 Writing
+            </button>
+            <button 
+                onClick={() => setActiveTab('vocab')} 
+                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'vocab' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+                Vocab
             </button>
         </div>
 
@@ -153,6 +167,41 @@ const ProgressPage: React.FC<{ user: User }> = ({ user }) => {
                     ) : (
                          <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
                             No writing submissions yet.
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
+
+        {activeTab === 'vocab' && (
+            <div className="space-y-8 animate-fade-in-up">
+                <div className="glass-card p-8 rounded-[2rem] bg-gradient-to-br from-amber-900/30 to-orange-900/30">
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="p-3 bg-amber-500/20 rounded-full">
+                             <BookIcon className="w-6 h-6 text-amber-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Your Wortschatz</h2>
+                    </div>
+                    <p className="text-gray-400">Words collected from your mistakes and conversations.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {vocabList.length > 0 ? (
+                        vocabList.map((item, idx) => (
+                            <div key={idx} className="bg-[#1a1a1a] p-5 rounded-3xl border border-white/5 hover:border-amber-500/30 transition-all group hover:translate-y-[-2px]">
+                                <div className="flex justify-between items-start mb-3">
+                                    <h3 className="text-xl font-bold text-white">{item.word}</h3>
+                                    <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">DE</span>
+                                </div>
+                                <p className="text-gray-400 text-sm mb-4 italic">{item.translation}</p>
+                                <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                                    <p className="text-xs text-gray-300 leading-relaxed">"{item.context}"</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                         <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                            No vocabulary collected yet. Complete a speaking session to generate cards.
                         </div>
                     )}
                 </div>
