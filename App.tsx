@@ -56,7 +56,7 @@ const App: React.FC = () => {
   const renderView = () => {
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-[100dvh]">
                 <LoaderIcon className="w-12 h-12 text-purple-400 animate-spin" />
             </div>
         );
@@ -81,7 +81,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-[100dvh] w-screen flex flex-col antialiased bg-black" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-[100dvh] w-screen flex flex-col antialiased bg-black" style={{ fontFamily: "'Inter', sans-serif" }}>
        <div className="flex-1 h-full w-full overflow-y-auto relative scroll-smooth">
         {renderView()}
       </div>

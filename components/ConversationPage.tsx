@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { User, ConversationTurn, FeedbackReport, Scenario, UserTrack, ExamTopic } from '../types';
@@ -566,7 +565,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                   </div>
 
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Scenarios</h3>
-                  <div className="flex flex-col gap-3 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">
                       {filteredScenarios.map((scenario) => (
                           <button
                             key={scenario.id}
@@ -640,20 +639,45 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
             </div>
         )}
 
-        <main className="flex-1 flex flex-col items-center justify-center relative">
-            <div className="relative z-10 flex flex-col items-center justify-center">
+        {/* ACTIVE SESSION MAIN CONTENT */}
+        <main className="flex-1 w-full relative flex flex-col items-center justify-evenly landscape:flex-row landscape:justify-center landscape:gap-8 landscape:items-center min-h-[400px]">
+            {/* Visuals Container */}
+            <div className="relative z-10 flex flex-col items-center justify-center landscape:order-1">
                 <NovaOrb state={aiState} />
-                <div className={`mt-8 transition-all duration-500 overflow-hidden rounded-2xl border border-white/20 shadow-2xl ${isVisionEnabled ? 'w-40 h-56 opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-50'}`}>
+                
+                {/* Vision Preview */}
+                <div className={`mt-6 transition-all duration-500 overflow-hidden rounded-2xl border border-white/20 shadow-2xl ${isVisionEnabled ? 'w-32 h-44 opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-50'}`}>
                     <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
                 </div>
-                <div className="mt-10 text-center h-8 transition-all duration-500">
+
+                {/* Status Text */}
+                <div className="mt-6 text-center h-6 transition-all duration-500">
                     {aiState === 'idle' && <p className="text-gray-400 text-sm font-medium tracking-wide uppercase animate-fade-in-up">Tap Mic to Start</p>}
                     {aiState === 'listening' && <p className="text-blue-400 text-sm font-bold tracking-widest uppercase animate-pulse">Listening</p>}
                     {aiState === 'thinking' && <p className="text-purple-400 text-sm font-bold tracking-widest uppercase animate-pulse">Thinking</p>}
                     {aiState === 'speaking' && <p className="text-pink-400 text-sm font-bold tracking-widest uppercase">Nova Speaking</p>}
                 </div>
             </div>
+
+            {/* Controls Container (Landscape: moved to right) */}
+            <div className="relative z-20 flex justify-center pb-6 landscape:order-2 landscape:pb-0 landscape:flex-col landscape:items-center">
+                <button
+                    onClick={isRecording ? () => stopRecording(true) : startRecording}
+                    disabled={aiState === 'thinking'}
+                    className={`relative group flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 shadow-2xl active:scale-95 ${isRecording ? 'bg-red-500/10' : 'bg-white/5'} ${showTranscript ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
+                >
+                     <div className={`absolute inset-0 rounded-full blur-xl transition-all duration-500 ${isRecording ? 'bg-red-500/40 scale-110' : 'bg-blue-500/0 group-hover:bg-blue-500/40 group-hover:scale-110'}`}></div>
+                     <div className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                         isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-400 text-white' : 'bg-gradient-to-br from-gray-800 to-black border-white/20 text-gray-300 group-hover:border-blue-400/50 group-hover:text-white'
+                     }`}>
+                         {aiState === 'thinking' ? (
+                             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                         ) : isRecording ? <StopIcon className="w-6 h-6 fill-current" /> : <MicIcon className="w-6 h-6" />}
+                     </div>
+                </button>
+            </div>
+
              {/* Transcript Panel */}
              <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2rem] border-t border-white/10 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
                  <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5 rounded-t-[2rem]">
@@ -680,23 +704,6 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                  </div>
             </div>
         </main>
-
-        <div className={`absolute bottom-24 left-0 right-0 z-20 flex justify-center pb-6 transition-transform duration-500 ${showTranscript ? 'translate-y-[200%]' : 'translate-y-0'}`}>
-            <button
-                onClick={isRecording ? () => stopRecording(true) : startRecording}
-                disabled={aiState === 'thinking'}
-                className={`relative group flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 shadow-2xl active:scale-95 ${isRecording ? 'bg-red-500/10' : 'bg-white/5'}`}
-            >
-                 <div className={`absolute inset-0 rounded-full blur-xl transition-all duration-500 ${isRecording ? 'bg-red-500/40 scale-110' : 'bg-blue-500/0 group-hover:bg-blue-500/40 group-hover:scale-110'}`}></div>
-                 <div className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                     isRecording ? 'bg-gradient-to-br from-red-500 to-red-600 border-red-400 text-white' : 'bg-gradient-to-br from-gray-800 to-black border-white/20 text-gray-300 group-hover:border-blue-400/50 group-hover:text-white'
-                 }`}>
-                     {aiState === 'thinking' ? (
-                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     ) : isRecording ? <StopIcon className="w-6 h-6 fill-current" /> : <MicIcon className="w-6 h-6" />}
-                 </div>
-            </button>
-        </div>
 
       {error && (
             <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-red-500/20 backdrop-blur-xl border border-red-500/30 text-red-100 px-4 py-3 rounded-xl shadow-2xl text-center z-50 animate-fade-in-up text-sm">

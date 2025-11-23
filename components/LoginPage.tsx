@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GoogleIcon } from './icons';
 import { User, UserTrack } from '../types';
@@ -41,58 +40,58 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-pulse" style={{animationDelay: '1s'}}></div>
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 sm:p-6 relative overflow-hidden overflow-y-auto">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-pulse pointer-events-none" style={{animationDelay: '1s'}}></div>
 
-      <div className="w-full max-w-md relative z-10 glass-card p-8 sm:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl animate-fade-in-up flex flex-col items-center">
+      <div className="w-full max-w-md relative z-10 glass-card p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-white/10 shadow-2xl animate-fade-in-up flex flex-col items-center my-auto">
         
-        <div onClick={handleTeacherLogin} className="cursor-pointer w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative group">
+        <div onClick={handleTeacherLogin} className="cursor-pointer w-20 h-20 sm:w-24 sm:h-24 mb-4 sm:mb-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 relative group">
             <div className="absolute inset-0 rounded-full border border-white/20 group-hover:border-white/40 transition-colors"></div>
-            <span className="text-5xl">🇩🇪</span>
+            <span className="text-4xl sm:text-5xl">🇩🇪</span>
         </div>
 
-        <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2 text-center">
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 text-center">
             Nova
         </h1>
-        <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200 font-medium mb-8 text-center">
+        <p className="text-base sm:text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200 font-medium mb-6 sm:mb-8 text-center">
             German Fluency Accelerator
         </p>
 
         {/* Track Selector */}
-        <div className="w-full mb-8 space-y-3">
+        <div className="w-full mb-6 sm:mb-8 space-y-3">
             <p className="text-xs text-gray-400 uppercase tracking-wider font-bold text-center mb-4">Select Your Goal</p>
             
             <button 
                 onClick={() => setSelectedTrack('nursing')}
-                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'nursing' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`w-full p-3 sm:p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'nursing' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
             >
-                <div className="text-2xl">🩺</div>
+                <div className="text-xl sm:text-2xl">🩺</div>
                 <div className="text-left">
-                    <div className={`font-bold ${selectedTrack === 'nursing' ? 'text-white' : 'text-gray-300'}`}>Nursing (Pflege)</div>
-                    <div className="text-xs text-gray-400">For B2 Pflege exams & Hospital work</div>
+                    <div className={`font-bold text-sm sm:text-base ${selectedTrack === 'nursing' ? 'text-white' : 'text-gray-300'}`}>Nursing (Pflege)</div>
+                    <div className="text-[10px] sm:text-xs text-gray-400">For B2 Pflege exams & Hospital work</div>
                 </div>
             </button>
 
             <button 
                 onClick={() => setSelectedTrack('academic')}
-                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'academic' ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(147,51,234,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`w-full p-3 sm:p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'academic' ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(147,51,234,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
             >
-                <div className="text-2xl">🎓</div>
+                <div className="text-xl sm:text-2xl">🎓</div>
                 <div className="text-left">
-                    <div className={`font-bold ${selectedTrack === 'academic' ? 'text-white' : 'text-gray-300'}`}>Study Abroad</div>
-                    <div className="text-xs text-gray-400">University admission, TestDaF, Visa</div>
+                    <div className={`font-bold text-sm sm:text-base ${selectedTrack === 'academic' ? 'text-white' : 'text-gray-300'}`}>Study Abroad</div>
+                    <div className="text-[10px] sm:text-xs text-gray-400">University admission, TestDaF, Visa</div>
                 </div>
             </button>
 
             <button 
                 onClick={() => setSelectedTrack('general')}
-                className={`w-full p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'general' ? 'bg-green-600/20 border-green-500 shadow-[0_0_20px_rgba(22,163,74,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`w-full p-3 sm:p-4 rounded-2xl border transition-all duration-200 flex items-center gap-4 ${selectedTrack === 'general' ? 'bg-green-600/20 border-green-500 shadow-[0_0_20px_rgba(22,163,74,0.3)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
             >
-                <div className="text-2xl">🌍</div>
+                <div className="text-xl sm:text-2xl">🌍</div>
                 <div className="text-left">
-                    <div className={`font-bold ${selectedTrack === 'general' ? 'text-white' : 'text-gray-300'}`}>General Learning</div>
-                    <div className="text-xs text-gray-400">Travel, A1-B1 Basics, Hobby</div>
+                    <div className={`font-bold text-sm sm:text-base ${selectedTrack === 'general' ? 'text-white' : 'text-gray-300'}`}>General Learning</div>
+                    <div className="text-[10px] sm:text-xs text-gray-400">Travel, A1-B1 Basics, Hobby</div>
                 </div>
             </button>
         </div>
