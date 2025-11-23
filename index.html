@@ -88,8 +88,8 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
+  /* Scrollbar - Added height for horizontal scrolling */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
@@ -97,16 +97,16 @@
   /* NOVA AI ORB ANIMATIONS - RESPONSIVE */
   .orb-container {
     position: relative;
-    width: min(240px, 40vmin);
-    height: min(240px, 40vmin);
+    width: min(240px, 35vmin);
+    height: min(240px, 35vmin);
     display: flex;
     justify-content: center;
     align-items: center;
   }
   
   .orb-core {
-    width: min(140px, 25vmin);
-    height: min(140px, 25vmin);
+    width: min(140px, 20vmin);
+    height: min(140px, 20vmin);
     border-radius: 50%;
     position: relative;
     z-index: 10;
@@ -180,8 +180,8 @@
     pointer-events: none;
   }
 
-  .ring-1 { width: min(180px, 30vmin); height: min(180px, 30vmin); animation: rotate-cw 20s linear infinite; }
-  .ring-2 { width: min(280px, 45vmin); height: min(280px, 45vmin); border-style: dashed; animation: rotate-ccw 40s linear infinite; opacity: 0.3; }
+  .ring-1 { width: min(180px, 28vmin); height: min(180px, 28vmin); animation: rotate-cw 20s linear infinite; }
+  .ring-2 { width: min(280px, 42vmin); height: min(280px, 42vmin); border-style: dashed; animation: rotate-ccw 40s linear infinite; opacity: 0.3; }
   
   @keyframes rotate-cw { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   @keyframes rotate-ccw { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(-360deg); } }

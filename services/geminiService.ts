@@ -9,23 +9,30 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function getFeedbackOnConversation(transcript: ConversationTurn[]): Promise<Omit<FeedbackReport, 'id' | 'date' | 'transcript'>> {
-    const conversationText = transcript.map(turn => `${turn.speaker === 'user' ? 'Student' : 'Tutor (Nova)'}: ${turn.text}`).join('\n');
+    const conversationText = transcript.map((turn, i) => `[Turn ${i}] ${turn.speaker === 'user' ? 'Student' : 'Tutor'}: ${turn.text}`).join('\n');
 
     const prompt = `
-        You are a German language expert examiner evaluating a student's conversation with an AI tutor named Nova.
-        
+        You are a strict German language linguistic expert. Evaluate this conversation transcript.
+
         Transcript:
         ${conversationText}
 
         ---
         Requirements:
-        1. Evaluate based on CEFR standards (A1-B2 range).
-        2. "scores": Rate strictly out of 10.
-        3. "weakPoints": Identify specific grammatical errors (e.g., "Used 'der' instead of 'den' in accusative").
-        4. "improvementTips": Actionable grammar or vocabulary advice.
-        5. "newVocabulary": Extract 3-5 important German words or phrases that were either used incorrectly or related to the topic that the user should learn. Provide English translation and a short German example sentence.
-        
-        Respond ONLY in valid JSON matching the schema.
+        1. **scores**: Rate 0-10 strictly.
+        2. **cefrLevel**: Estimate the student's CEFR level based on this specific conversation (e.g., "A2.1", "B2", "C1").
+        3. **grammarAnalysis**: Find SPECIFIC errors. 
+           - "error": the part of the sentence that was wrong.
+           - "correction": the corrected version.
+           - "reason": A short, grammatical explanation (e.g., "Dative required after 'mit'").
+        4. **pronunciationAnalysis**: For each USER turn, create a heatmap.
+           - Break the user's sentence into words.
+           - Assign status: "perfect" (green), "okay" (yellow), "wrong" (red).
+           - Base "wrong" status on likely mispronunciations for non-natives or grammatical fit that sounds 'off'. 
+           - **Important**: Only analyze USER turns.
+        5. **newVocabulary**: Extract 3 useful words/phrases relevant to the topic.
+
+        Respond ONLY in valid JSON.
     `;
 
     try {
@@ -47,9 +54,41 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
                             },
                             required: ["fluency", "pronunciation", "grammar", "overall"]
                         },
-                        weakPoints: {
+                        cefrLevel: { type: Type.STRING, description: "Estimated CEFR Level like A1, A2, B1, B2, C1" },
+                        grammarAnalysis: {
                             type: Type.ARRAY,
-                            items: { type: Type.STRING }
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    sentence: { type: Type.STRING },
+                                    error: { type: Type.STRING },
+                                    correction: { type: Type.STRING },
+                                    reason: { type: Type.STRING },
+                                    type: { type: Type.STRING, enum: ["grammar", "vocabulary", "syntax"] }
+                                },
+                                required: ["sentence", "error", "correction", "reason", "type"]
+                            }
+                        },
+                        pronunciationAnalysis: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    turnIndex: { type: Type.INTEGER },
+                                    words: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                word: { type: Type.STRING },
+                                                status: { type: Type.STRING, enum: ["perfect", "okay", "wrong"] }
+                                            },
+                                            required: ["word", "status"]
+                                        }
+                                    }
+                                },
+                                required: ["turnIndex", "words"]
+                            }
                         },
                         improvementTips: {
                             type: Type.ARRAY,
@@ -68,7 +107,7 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
                             }
                         }
                     },
-                    required: ["scores", "weakPoints", "improvementTips", "newVocabulary"]
+                    required: ["scores", "cefrLevel", "grammarAnalysis", "pronunciationAnalysis", "improvementTips", "newVocabulary"]
                 },
             },
         });
@@ -76,13 +115,11 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
         const jsonText = response.text?.trim();
         if (!jsonText) throw new Error("Empty response from AI");
         
-        const feedbackData = JSON.parse(jsonText);
-
-        return feedbackData;
+        return JSON.parse(jsonText);
 
     } catch (error) {
         console.error("Error getting feedback from Gemini API:", error);
-        throw new Error("Failed to generate feedback for the conversation.");
+        throw new Error("Failed to generate feedback.");
     }
 }
 
@@ -140,8 +177,7 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
         const jsonText = response.text?.trim();
         if (!jsonText) throw new Error("Empty response from AI");
 
-        const writingData = JSON.parse(jsonText);
-        return writingData;
+        return JSON.parse(jsonText);
 
     } catch (error) {
         console.error("Error getting writing feedback from Gemini API:", error);
@@ -149,7 +185,7 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
     }
 }
 
-// NEW: Generates a unique Exam Topic based on Track AND Level
+// Generates a unique Exam Topic based on Track AND Level
 export async function generateDynamicExamTopic(track: 'nursing' | 'academic' | 'general', level: string): Promise<ExamTopic> {
     let contextPrompt = "";
     let complexityPrompt = "";
@@ -219,7 +255,6 @@ export async function generateDynamicExamTopic(track: 'nursing' | 'academic' | '
 
     } catch (error) {
         console.error("Error generating exam topic", error);
-        // Fallback topic if API fails
         return {
             title: "Mein liebstes Hobby",
             introText: "Erzählen Sie uns etwas über sich.",

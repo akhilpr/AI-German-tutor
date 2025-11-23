@@ -81,8 +81,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] w-screen flex flex-col antialiased bg-black" style={{ fontFamily: "'Inter', sans-serif" }}>
-       <div className="flex-1 h-full w-full overflow-y-auto relative scroll-smooth">
+    <div className="min-h-[100dvh] w-full flex flex-col antialiased bg-black overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+       <div className="flex-1 h-full w-full overflow-y-auto overflow-x-hidden relative scroll-smooth">
         {renderView()}
       </div>
       {!isLoading && currentView !== AppView.LOGIN && user && user.role !== 'teacher' && (

@@ -16,11 +16,19 @@ const OUTPUT_SAMPLE_RATE = 24000;
 const SCRIPT_PROCESSOR_BUFFER_SIZE = 4096;
 const VIDEO_FRAME_RATE = 1;
 
-// SCENARIO DATABASE
+// German Dialects Configuration
+const DIALECTS = [
+    { id: 'standard', name: 'Standard (Hochdeutsch)', flag: '🇩🇪', prompt: 'Speak standard, clear High German (Hochdeutsch).' },
+    { id: 'austrian', name: 'Austrian (Österreichisch)', flag: '🇦🇹', prompt: 'Speak with a noticeable Austrian accent and use Austrian vocabulary (e.g., "Jänner" instead of "Januar", "Sackerl" instead of "Tüte", "Grüß Gott").' },
+    { id: 'swiss', name: 'Swiss (Schweizerdeutsch)', flag: '🇨🇭', prompt: 'Speak with a strong Swiss German accent/melody. Use "Grüezi" and typical Swiss phrasing, but keep it understandable for a learner.' },
+    { id: 'bavarian', name: 'Bavarian (Bayrisch)', flag: '🍺', prompt: 'Speak with a Bavarian accent. Use "Servus", "I" instead of "Ich", but keep it understandable.' },
+    { id: 'berlin', name: 'Berlin (Berlinerisch)', flag: '🐻', prompt: 'Speak with a Berlin dialect (Berliner Schnauze). Use "icke", "dat", "wat". Be direct and a bit cheeky.' },
+];
+
 const SCENARIOS: Scenario[] = [
     {
         id: 'beginner_bakery',
-        title: 'At the Bakery (A1)',
+        title: 'At the Bakery',
         description: 'Beginner: Buy bread and coffee. Simple polite phrases.',
         emoji: '🥐',
         difficulty: 'A1',
@@ -41,8 +49,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'nurse_job_interview',
-        title: 'Job Interview (Vorstellungsgespräch)',
-        description: 'High-stakes interview simulation. Convince the Head Nurse to hire you.',
+        title: 'Job Interview',
+        description: 'High-stakes interview simulation. Convince the Head Nurse.',
         emoji: '🤝',
         difficulty: 'C1',
         track: 'nursing',
@@ -69,8 +77,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'exam_b2_planen',
-        title: 'Exam Prep: Plan Together',
-        description: 'Practice "Teil 3: Gemeinsam etwas planen". We must organize a surprise party for a colleague.',
+        title: 'B2 Exam: Planning',
+        description: 'Teil 3: Plan a surprise party for a colleague together.',
         emoji: '📝',
         difficulty: 'B2',
         track: 'all',
@@ -81,8 +89,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'nurse_anamnese',
-        title: 'Patient Admission (Anamnese)',
-        description: 'Admit a new patient with stomach pain. Ask about pain level, history, and allergies.',
+        title: 'Patient Admission',
+        description: 'Admit a new patient with stomach pain. Ask history.',
         emoji: '🏥',
         difficulty: 'B2',
         track: 'nursing',
@@ -92,8 +100,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'nurse_uebergabe',
-        title: 'Shift Handover (Übergabe)',
-        description: 'Give a handover report to a colleague about a patient who fell earlier.',
+        title: 'Shift Handover',
+        description: 'Give a handover report to a colleague about a patient.',
         emoji: '📋',
         difficulty: 'B2',
         track: 'nursing',
@@ -103,8 +111,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'student_visa',
-        title: 'Visa Interview Prep',
-        description: 'Simulate the consulate interview. Explain why you want to study in Germany.',
+        title: 'Visa Interview',
+        description: 'Simulate the consulate interview for your student visa.',
         emoji: '🛂',
         difficulty: 'B1',
         track: 'academic',
@@ -114,8 +122,8 @@ const SCENARIOS: Scenario[] = [
     },
     {
         id: 'student_enrollment',
-        title: 'University Registration',
-        description: 'You are missing a document for enrollment. Negotiate with the secretary.',
+        title: 'Uni Registration',
+        description: 'Negotiate with the secretary about a missing document.',
         emoji: '🎓',
         difficulty: 'B2',
         track: 'academic',
@@ -145,6 +153,10 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
   const [showTranscript, setShowTranscript] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   
+  // Dialect State
+  const [selectedDialect, setSelectedDialect] = useState(DIALECTS[0]);
+  const [showDialectSelector, setShowDialectSelector] = useState(false);
+
   // Exam Generator State
   const [isGeneratingExam, setIsGeneratingExam] = useState(false);
   const [examLevel, setExamLevel] = useState<string>('B2');
@@ -199,8 +211,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
 
     const scenario: Scenario = {
         id: `casual_${Date.now()}`,
-        title: `Casual Conversation (${casualLevel})`,
-        description: `Open-ended practice at ${casualLevel} level.`,
+        title: `Casual Chat (${casualLevel})`,
+        description: `Open practice at ${casualLevel} level.`,
         emoji: '☕',
         difficulty: casualLevel as any,
         track: 'all',
@@ -221,6 +233,32 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
     };
     setSelectedScenario(scenario);
   };
+  
+  const handleVoiceNoteMode = () => {
+       const scenario: Scenario = {
+        id: `voicenote_${Date.now()}`,
+        title: `Voice Message`,
+        description: `WhatsApp Style: Speak short sentences, get instant correction.`,
+        emoji: '🎙️',
+        difficulty: 'B1',
+        track: 'all',
+        colorFrom: 'from-green-500',
+        colorTo: 'to-emerald-600',
+        systemPrompt: `
+            MODE: VOICE MESSAGE CORRECTION.
+            
+            You are an auto-corrector. 
+            1. The user will speak a short sentence (like a WhatsApp voice note).
+            2. You must IMMEDIATELY reply with:
+               - The corrected German sentence.
+               - A very short explanation of the mistake (if any).
+               - Then say: "Try again" or "Next phrase".
+            3. Do not hold a conversation. Just correct.
+            4. Keep responses extremely concise.
+        `
+    };
+    setSelectedScenario(scenario);
+  };
 
   const handleGenerateExam = async () => {
       setIsGeneratingExam(true);
@@ -228,8 +266,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
           const topic = await generateDynamicExamTopic(user.track, examLevel);
           const dynamicScenario: Scenario = {
               id: `exam_generated_${Date.now()}`,
-              title: `${examLevel} Exam Simulator`,
-              description: `Strict mock exam mode (${examLevel}). Topic: ` + topic.title,
+              title: `${examLevel} Exam Sim`,
+              description: `Strict mock exam mode (${examLevel}).`,
               emoji: '👨‍🏫',
               difficulty: examLevel as any,
               track: user.track,
@@ -372,7 +410,8 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
           ...feedbackData,
           transcript: [...transcript],
           isExamCertificate: selectedScenario?.isExamPrep,
-          examTopicTitle: selectedScenario?.dynamicTopic?.title || selectedScenario?.title
+          examTopicTitle: selectedScenario?.dynamicTopic?.title || selectedScenario?.title,
+          dialectUsed: selectedDialect.name
         };
         
         const storedReportsRaw = localStorage.getItem('german_tutor_reports');
@@ -387,7 +426,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
        if (!shouldGetFeedback) setTranscript([]); 
     }
     setAiState('idle');
-  }, [transcript, stopPlayback, selectedScenario]);
+  }, [transcript, stopPlayback, selectedScenario, selectedDialect]);
 
   const startRecording = useCallback(async () => {
     if (!aiRef.current || !selectedScenario) return;
@@ -448,6 +487,10 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
           onerror: (e: ErrorEvent) => { setError("Connection lost."); stopRecording(false); },
           onclose: (e: CloseEvent) => { setAiState('idle'); },
       };
+        
+        const dialectInstruction = selectedDialect.id !== 'standard' 
+            ? `\nIMPORTANT: ${selectedDialect.prompt}\n`
+            : '';
 
         sessionPromiseRef.current = aiRef.current.live.connect({
             model: 'gemini-2.5-flash-native-audio-preview-09-2025',
@@ -458,6 +501,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                 outputAudioTranscription: {},
                 systemInstruction: `
                     ${selectedScenario.systemPrompt}
+                    ${dialectInstruction}
                     
                     General Rules:
                     1. Speak clearly.
@@ -467,11 +511,12 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
             },
         });
     } catch (err) { setIsRecording(false); setAiState('idle'); }
-  }, [handlePlayback, stopPlayback, stopRecording, selectedScenario]);
+  }, [handlePlayback, stopPlayback, stopRecording, selectedScenario, selectedDialect]);
   
+  // RENDER: SCENARIO SELECTION SCREEN
   if (!selectedScenario) {
       return (
-          <div className="flex flex-col h-full overflow-y-auto pb-28">
+          <div className="flex flex-col h-full overflow-y-auto pb-32">
               <div className="pt-6 px-4 pb-4 max-w-4xl mx-auto w-full">
                   <div className="mb-6 flex flex-row justify-between items-center gap-4">
                     <div>
@@ -480,35 +525,59 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                         </span>
                         <h1 className="text-xl font-bold text-white mt-1">Training</h1>
                     </div>
-                    <button onClick={onLogout} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full text-xs font-medium text-gray-300 hover:text-red-400 transition-all">
-                        <LogoutIcon className="w-3 h-3" />
-                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <button onClick={() => setShowDialectSelector(!showDialectSelector)} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full text-xs font-medium text-gray-300 hover:text-white transition-all active:scale-95">
+                                <span className="text-lg">{selectedDialect.flag}</span>
+                                <span className="hidden md:inline">{selectedDialect.name.split(' ')[0]}</span>
+                            </button>
+                            {showDialectSelector && (
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                    <div className="p-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-white/5 bg-black/20">Select Accent</div>
+                                    {DIALECTS.map(dialect => (
+                                        <button 
+                                            key={dialect.id}
+                                            onClick={() => { setSelectedDialect(dialect); setShowDialectSelector(false); }}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-white/10 transition-colors ${selectedDialect.id === dialect.id ? 'bg-white/5 text-white' : 'text-gray-400'}`}
+                                        >
+                                            <span className="text-2xl">{dialect.flag}</span>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">{dialect.name.split(' (')[0]}</span>
+                                                <span className="text-[10px] opacity-70">{dialect.name.split('(')[1]?.replace(')', '') || 'Standard'}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={onLogout} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full text-xs font-medium text-gray-300 hover:text-red-400 transition-all active:scale-95">
+                            <LogoutIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                   </div>
                   
-                  {/* Quick Start Section (Casual & Exam) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                      {/* CASUAL CHAT CARD */}
-                      <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg p-0.5">
-                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="relative bg-[#121212] rounded-[1.4rem] p-5 h-full flex flex-col justify-between">
+                  {/* QUICK START CARDS - Mobile Carousel / Desktop Grid */}
+                  <div className="flex overflow-x-auto pb-4 snap-x snap-mandatory gap-4 -mx-4 px-4 md:grid md:grid-cols-3 md:pb-0 md:mx-0 md:px-0 scrollbar-hide">
+                      {/* CASUAL */}
+                      <div className="min-w-[85vw] md:min-w-0 snap-center group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-pink-500/20 to-rose-600/20 border border-pink-500/30 shadow-lg">
+                          <div className="p-5 h-full flex flex-col justify-between">
                                 <div className="flex flex-col gap-4 mb-4">
                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg flex-shrink-0">
-                                            <div className="text-xl">☕</div>
-                                        </div>
-                                        <div className="text-left">
+                                        <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-xl">☕</div>
+                                        <div>
                                             <h3 className="text-base font-bold text-white">Casual Chat</h3>
-                                            <p className="text-[10px] text-gray-400">Practice freely.</p>
+                                            <p className="text-[10px] text-gray-400">Daily practice</p>
                                         </div>
                                     </div>
                                     
-                                    {/* Level Selector - Touch Friendly */}
-                                    <div className="flex flex-wrap gap-2 bg-black/30 p-2 rounded-xl border border-white/10 justify-center sm:justify-start">
+                                    <div className="flex flex-wrap gap-1.5 justify-start">
                                         {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
                                             <button 
                                                 key={lvl}
                                                 onClick={() => setCasualLevel(lvl)}
-                                                className={`min-w-[2.5rem] h-10 rounded-lg text-sm font-bold transition-all active:scale-95 ${casualLevel === lvl ? 'bg-pink-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 hover:text-gray-200 border border-white/5'}`}
+                                                className={`h-8 px-3 rounded-lg text-xs font-bold transition-all active:scale-95 border ${casualLevel === lvl ? 'bg-pink-500 border-pink-500 text-white' : 'bg-black/30 border-white/10 text-gray-400 hover:text-white'}`}
                                             >
                                                 {lvl}
                                             </button>
@@ -517,35 +586,57 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                                 </div>
                                 <button 
                                     onClick={handleStartCasualChat}
-                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-pink-300 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2 active:scale-[0.98]"
+                                    className="w-full py-3 rounded-xl bg-pink-500 text-white font-bold uppercase tracking-wider text-xs shadow-lg active:scale-[0.98] hover:bg-pink-400 transition-colors"
                                 >
                                     Start Chat
                                 </button>
                           </div>
                       </div>
 
-                      {/* EXAM GENERATOR CARD */}
-                      <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-amber-600 to-orange-700 shadow-lg p-0.5">
-                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="relative bg-[#121212] rounded-[1.4rem] p-5 h-full flex flex-col justify-between">
+                      {/* VOICE NOTE */}
+                      <div className="min-w-[85vw] md:min-w-0 snap-center group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-green-500/20 to-emerald-600/20 border border-green-500/30 shadow-lg">
+                          <div className="p-5 h-full flex flex-col justify-between">
                                 <div className="flex flex-col gap-4 mb-4">
                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                                            {isGeneratingExam ? <div className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></div> : <SparklesIcon className="w-5 h-5 text-white" />}
+                                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-xl">🎙️</div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-white">Voice Note</h3>
+                                            <p className="text-[10px] text-gray-400">Instant correction</p>
                                         </div>
-                                        <div className="text-left">
-                                            <h3 className="text-base font-bold text-white">Exam Simulator</h3>
-                                            <p className="text-[10px] text-gray-400">Dynamic topics.</p>
+                                    </div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        Speak a phrase like a WhatsApp voice note. AI corrects grammar instantly.
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={handleVoiceNoteMode}
+                                    className="w-full py-3 rounded-xl bg-green-500 text-white font-bold uppercase tracking-wider text-xs shadow-lg active:scale-[0.98] hover:bg-green-400 transition-colors"
+                                >
+                                    Start Mode
+                                </button>
+                          </div>
+                      </div>
+
+                      {/* EXAM */}
+                      <div className="min-w-[85vw] md:min-w-0 snap-center group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-amber-600/20 to-orange-700/20 border border-amber-500/30 shadow-lg">
+                          <div className="p-5 h-full flex flex-col justify-between">
+                                <div className="flex flex-col gap-4 mb-4">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                            {isGeneratingExam ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div> : <SparklesIcon className="w-5 h-5 text-amber-400" />}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-white">Exam Sim</h3>
+                                            <p className="text-[10px] text-gray-400">Dynamic topics</p>
                                         </div>
                                     </div>
                                     
-                                    {/* Level Selector - Touch Friendly */}
-                                    <div className="flex flex-wrap gap-2 bg-black/30 p-2 rounded-xl border border-white/10 justify-center sm:justify-start">
+                                    <div className="flex flex-wrap gap-1.5 justify-start">
                                         {['A1', 'A2', 'B1', 'B2', 'C1'].map((lvl) => (
                                             <button 
                                                 key={lvl}
                                                 onClick={() => setExamLevel(lvl)}
-                                                className={`min-w-[2.5rem] h-10 rounded-lg text-sm font-bold transition-all active:scale-95 ${examLevel === lvl ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/5 text-gray-400 hover:text-gray-200 border border-white/5'}`}
+                                                className={`h-8 px-3 rounded-lg text-xs font-bold transition-all active:scale-95 border ${examLevel === lvl ? 'bg-amber-500 border-amber-500 text-black' : 'bg-black/30 border-white/10 text-gray-400 hover:text-white'}`}
                                             >
                                                 {lvl}
                                             </button>
@@ -556,15 +647,15 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                                 <button 
                                     onClick={handleGenerateExam}
                                     disabled={isGeneratingExam}
-                                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-amber-400 font-bold uppercase tracking-wider text-xs transition-all flex justify-center items-center gap-2 active:scale-[0.98]"
+                                    className="w-full py-3 rounded-xl bg-amber-500 text-black font-bold uppercase tracking-wider text-xs shadow-lg active:scale-[0.98] hover:bg-amber-400 transition-colors"
                                 >
-                                    Generate & Start
+                                    Generate
                                 </button>
                           </div>
                       </div>
                   </div>
 
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Scenarios</h3>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1 mt-4 md:mt-0">Guided Scenarios</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">
                       {filteredScenarios.map((scenario) => (
                           <button
@@ -592,8 +683,10 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
       );
   }
 
+  // RENDER: ACTIVE CONVERSATION
   return (
     <div className="flex flex-col h-full bg-transparent text-white relative overflow-hidden">
+        {/* Header */}
         <header className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
             <div className="max-w-4xl mx-auto py-4 px-4 flex justify-between items-center pointer-events-auto">
                 <button onClick={() => {stopRecording(false); setSelectedScenario(null);}} className="glass-panel px-3 py-2 rounded-full flex items-center gap-2 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide active:scale-95">
@@ -610,7 +703,7 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
             </div>
         </header>
 
-        {/* EXAM CARD OVERLAY */}
+        {/* Dynamic Exam Topic Card */}
         {selectedScenario.dynamicTopic && !isRecording && aiState === 'idle' && (
             <div className="absolute top-20 left-4 right-4 z-10 max-w-md mx-auto animate-fade-in-up">
                 <div className="bg-[#fffbf0] text-black p-6 rounded-lg shadow-2xl border-2 border-amber-500 rotate-1">
@@ -624,12 +717,13 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                          {selectedScenario.dynamicTopic.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
                      </ul>
                      <div className="mt-4 pt-4 border-t border-gray-300 text-center text-xs text-gray-500 uppercase font-bold">
-                         Start recording to begin exam
+                         Tap Mic to Begin
                      </div>
                 </div>
             </div>
         )}
 
+        {/* Scenario Pill */}
         {!selectedScenario.dynamicTopic && (
             <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
                 <div className="animate-fade-in-up bg-black/20 backdrop-blur-md px-5 py-2 rounded-full border border-white/5 flex items-center gap-3 shadow-xl">
@@ -678,11 +772,11 @@ const ConversationPage: React.FC<ConversationPageProps> = ({ user, onLogout }) =
                 </button>
             </div>
 
-             {/* Transcript Panel */}
+             {/* Transcript Panel - Mobile Optimized */}
              <div className={`absolute inset-x-0 bottom-0 max-h-[70%] bg-[#0a0a0a]/95 backdrop-blur-2xl z-30 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) rounded-t-[2rem] border-t border-white/10 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showTranscript ? 'translate-y-0' : 'translate-y-[110%]'}`}>
                  <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5 rounded-t-[2rem]">
                     <h3 className="font-bold text-base text-white">Live Transcript</h3>
-                    <button onClick={() => setShowTranscript(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                    <button onClick={() => setShowTranscript(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors active:scale-95">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                  </div>

@@ -22,16 +22,36 @@ export interface VocabularyItem {
   context: string;
 }
 
+// NEW: Structured Grammar Error
+export interface GrammarAnalysis {
+  sentence: string;
+  error: string;
+  correction: string;
+  reason: string;
+  type: 'grammar' | 'vocabulary' | 'syntax';
+}
+
+// NEW: Word-by-word pronunciation score
+export interface WordScore {
+  word: string;
+  status: 'perfect' | 'okay' | 'wrong';
+}
+
 export interface FeedbackReport {
   id: string;
   date: string;
   scores: FeedbackScores;
-  weakPoints: string[];
+  // Replaced simple weakPoints with detailed analysis
+  grammarAnalysis: GrammarAnalysis[]; 
+  // NEW: Heatmap data mapping transcript turns to word scores
+  pronunciationAnalysis: { turnIndex: number, words: WordScore[] }[];
   improvementTips: string[];
   newVocabulary: VocabularyItem[];
   transcript: ConversationTurn[];
-  isExamCertificate?: boolean; // NEW
-  examTopicTitle?: string; // NEW
+  isExamCertificate?: boolean;
+  examTopicTitle?: string;
+  cefrLevel: string; // NEW: e.g., "B1.2"
+  dialectUsed?: string; // NEW
 }
 
 export interface ConversationTurn {
@@ -55,11 +75,10 @@ export interface WritingReport {
   improvementTips: string[];
 }
 
-// NEW: Dynamic Exam Topic Structure
 export interface ExamTopic {
   title: string;
-  bulletPoints: string[]; // For presentation structure (e.g., "Pros/Cons", "My Experience")
-  introText: string; // The prompt text on the exam card
+  bulletPoints: string[]; 
+  introText: string; 
 }
 
 export interface Scenario {
@@ -73,7 +92,7 @@ export interface Scenario {
   colorFrom: string;
   colorTo: string;
   isExamPrep?: boolean;
-  dynamicTopic?: ExamTopic; // NEW: If present, this is a dynamically generated scenario
+  dynamicTopic?: ExamTopic;
 }
 
 export enum AppView {

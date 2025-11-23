@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FeedbackReport, User, WritingReport, VocabularyItem } from '../types';
 import ProgressChart from './ProgressChart';
@@ -27,16 +28,33 @@ const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, on
       console.error("Failed to parse reports", error);
     }
   }, []);
+  
+  // Helper to map CEFR to numbers for charting
+  const cefrToNumber = (level: string) => {
+      if (!level) return 0;
+      const l = level.toUpperCase().substring(0, 2);
+      switch(l) {
+          case 'A1': return 1;
+          case 'A2': return 2;
+          case 'B1': return 3;
+          case 'B2': return 4;
+          case 'C1': return 5;
+          case 'C2': return 6;
+          default: return 1;
+      }
+  };
 
   const speakingChartData = speakingReports.map(report => ({
     name: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     overall: report.scores.overall,
     fluency: report.scores.fluency,
+    cefrNum: cefrToNumber(report.cefrLevel),
+    cefrLabel: report.cefrLevel || 'A1'
   }));
   
   const speakingLines = [
-    { dataKey: 'overall', name: 'Overall', stroke: '#a855f7', strokeWidth: 3 },
-    { dataKey: 'fluency', name: 'Fluency', stroke: '#3b82f6', strokeWidth: 2 }
+    { dataKey: 'overall', name: 'Overall Score', stroke: '#a855f7', strokeWidth: 3 },
+    { dataKey: 'cefrNum', name: 'CEFR Level (1-6)', stroke: '#ec4899', strokeWidth: 2 }
   ];
 
   const writingChartData = writingReports.map(report => ({
@@ -93,17 +111,36 @@ const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, on
 
         {activeTab === 'speaking' && (
              <div className="space-y-8">
-                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-lg font-bold text-gray-200">Speaking Trends</h2>
-                        <div className="text-right">
-                             <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
-                                {speakingReports.length}
-                             </div>
-                             <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sessions</div>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Total Sessions</div>
+                        <div className="text-2xl font-bold text-white">{speakingReports.length}</div>
+                    </div>
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Words Learned</div>
+                        <div className="text-2xl font-bold text-amber-400">{vocabList.length}</div>
+                    </div>
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Current Level</div>
+                        <div className="text-2xl font-bold text-pink-400">{speakingReports[speakingReports.length-1]?.cefrLevel || 'A1'}</div>
+                    </div>
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Avg Score</div>
+                        <div className="text-2xl font-bold text-blue-400">
+                            {speakingReports.length > 0 
+                                ? (speakingReports.reduce((acc, curr) => acc + curr.scores.overall, 0) / speakingReports.length).toFixed(1)
+                                : '0'}
                         </div>
                     </div>
+                </div>
+
+                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-lg font-bold text-gray-200">Progress Trends</h2>
+                    </div>
                     <ProgressChart data={speakingChartData} lines={speakingLines} />
+                    <p className="text-xs text-gray-500 text-center mt-4 italic">Chart tracks Overall Score (0-10) and CEFR Level estimate.</p>
                 </div>
                 
                 <h2 className="text-lg font-bold text-gray-300 px-2 uppercase tracking-wide text-xs">Recent Sessions</h2>
@@ -113,11 +150,12 @@ const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, on
                             <div key={report.id} className="bg-white/5 p-6 rounded-3xl flex justify-between items-center hover:bg-white/10 transition-all border border-white/5 group">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                        <div className={`w-2.5 h-2.5 rounded-full ${report.scores.overall >= 7 ? 'bg-green-500 shadow-green-500/50' : 'bg-yellow-500'} shadow-[0_0_8px_rgba(34,197,94,0.6)]`}></div>
                                         <span className="font-bold text-white text-lg">{new Date(report.date).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'})}</span>
+                                        {report.dialectUsed && <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/20">{report.dialectUsed}</span>}
                                     </div>
                                     <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors flex items-center gap-2">
-                                        <span>{new Date(report.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        <span>Level: {report.cefrLevel}</span>
                                         <span className="w-1 h-1 rounded-full bg-gray-600"></span>
                                         <span>{report.transcript.length} turns</span>
                                     </p>
