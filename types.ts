@@ -1,12 +1,26 @@
 
 export type UserTrack = 'general' | 'nursing' | 'academic';
 
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+}
+
 export interface User {
   name: string;
   email: string;
   photoUrl: string;
   track: UserTrack;
   role: 'student' | 'teacher';
+  hasCompletedOnboarding: boolean; 
+  xp: number;
+  level: number;
+  streak: number;
+  lastSessionDate: string | null; // ISO string
+  unlockedAchievements: string[]; // Array of achievement IDs
+  completedSessionCount: number;
 }
 
 export interface FeedbackScores {
@@ -20,18 +34,17 @@ export interface VocabularyItem {
   word: string;
   translation: string;
   context: string;
+  status: 'new' | 'learning' | 'mastered';
 }
 
-// NEW: Structured Grammar Error
 export interface GrammarAnalysis {
   sentence: string;
   error: string;
   correction: string;
-  reason: string;
+  reason:string;
   type: 'grammar' | 'vocabulary' | 'syntax';
 }
 
-// NEW: Word-by-word pronunciation score
 export interface WordScore {
   word: string;
   status: 'perfect' | 'okay' | 'wrong';
@@ -41,17 +54,17 @@ export interface FeedbackReport {
   id: string;
   date: string;
   scores: FeedbackScores;
-  // Replaced simple weakPoints with detailed analysis
   grammarAnalysis: GrammarAnalysis[]; 
-  // NEW: Heatmap data mapping transcript turns to word scores
   pronunciationAnalysis: { turnIndex: number, words: WordScore[] }[];
   improvementTips: string[];
   newVocabulary: VocabularyItem[];
   transcript: ConversationTurn[];
   isExamCertificate?: boolean;
   examTopicTitle?: string;
-  cefrLevel: string; // NEW: e.g., "B1.2"
-  dialectUsed?: string; // NEW
+  cefrLevel: string;
+  dialectUsed?: string;
+  xpEarned: number;
+  scenarioId: string;
 }
 
 export interface ConversationTurn {
@@ -97,8 +110,9 @@ export interface Scenario {
 
 export enum AppView {
   LOGIN,
-  CONVERSATION,
-  PROGRESS,
+  HOME,
+  SPEAKING,
   WRITING,
+  DASHBOARD,
   TEACHER_DASHBOARD,
 }

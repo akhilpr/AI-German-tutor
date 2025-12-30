@@ -1,57 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
-import { FeedbackReport, User, WritingReport, VocabularyItem } from '../types';
+import { FeedbackReport, User, WritingReport, VocabularyItem, Achievement } from '../types';
 import ProgressChart from './ProgressChart';
-import { UserIcon, BotIcon, BookIcon, LogoutIcon } from './icons';
+import { UserIcon, BookIcon, LogoutIcon } from './icons';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { ALL_ACHIEVEMENTS, getLevelFromXp, getXpForNextLevel } from '../data/store';
 
-type Tab = 'speaking' | 'writing' | 'vocab';
+type Tab = 'speaking' | 'writing' | 'vocab' | 'achievements';
 
-const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
-  const [speakingReports, setSpeakingReports] = useState<FeedbackReport[]>([]);
-  const [writingReports, setWritingReports] = useState<WritingReport[]>([]);
+const DashboardPage: React.FC<{ user: User, onLogout: () => void, onBack: () => void }> = ({ user, onLogout, onBack }) => {
+  const [speakingReports] = useLocalStorage<FeedbackReport[]>('german_tutor_reports', []);
+  const [writingReports] = useLocalStorage<WritingReport[]>('german_tutor_writing_reports', []);
   const [activeTab, setActiveTab] = useState<Tab>('speaking');
-  const [vocabList, setVocabList] = useState<VocabularyItem[]>([]);
+  const [vocabList, setVocabList] = useLocalStorage<VocabularyItem[]>('german_tutor_vocab', []);
 
   useEffect(() => {
-    try {
-      const storedSpeaking = localStorage.getItem('german_tutor_reports');
-      if (storedSpeaking) {
-          const parsed = JSON.parse(storedSpeaking);
-          setSpeakingReports(parsed);
-          // Extract all vocabulary from all reports
-          const allVocab = parsed.flatMap((r: FeedbackReport) => r.newVocabulary || []);
-          setVocabList(allVocab.reverse()); // Newest first
-      }
-      const storedWriting = localStorage.getItem('german_tutor_writing_reports');
-      if (storedWriting) setWritingReports(JSON.parse(storedWriting));
-    } catch (error) {
-      console.error("Failed to parse reports", error);
-    }
-  }, []);
-  
-  // Helper to map CEFR to numbers for charting
+    const allVocab = speakingReports.flatMap((r: FeedbackReport) => r.newVocabulary || []);
+    setVocabList(prevList => {
+      const existingWords = new Set(prevList.map(v => v.word));
+      const newWords = allVocab.filter(v => !existingWords.has(v.word));
+      return [...newWords.map(w => ({...w, status: 'new' as const})), ...prevList];
+    });
+  }, [speakingReports]);
+
   const cefrToNumber = (level: string) => {
       if (!level) return 0;
       const l = level.toUpperCase().substring(0, 2);
-      switch(l) {
-          case 'A1': return 1;
-          case 'A2': return 2;
-          case 'B1': return 3;
-          case 'B2': return 4;
-          case 'C1': return 5;
-          case 'C2': return 6;
-          default: return 1;
-      }
+      const levelMap: Record<string, number> = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6};
+      return levelMap[l] || 1;
   };
 
   const speakingChartData = speakingReports.map(report => ({
     name: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     overall: report.scores.overall,
-    fluency: report.scores.fluency,
     cefrNum: cefrToNumber(report.cefrLevel),
-    cefrLabel: report.cefrLevel || 'A1'
   }));
-  
   const speakingLines = [
     { dataKey: 'overall', name: 'Overall Score', stroke: '#a855f7', strokeWidth: 3 },
     { dataKey: 'cefrNum', name: 'CEFR Level (1-6)', stroke: '#ec4899', strokeWidth: 2 }
@@ -67,196 +50,125 @@ const ProgressPage: React.FC<{ user: User, onLogout: () => void }> = ({ user, on
     <div className="min-h-screen text-gray-100 pb-36 overflow-y-auto">
       <header className="sticky top-0 z-20 backdrop-blur-xl border-b border-white/5 bg-black/40">
         <div className="max-w-4xl mx-auto py-5 px-6 flex justify-between items-center">
-            <div>
-                <h1 className="text-xl font-bold text-white">Dashboard</h1>
-                <p className="text-xs text-gray-400">Track your improvement</p>
-            </div>
             <div className="flex items-center gap-4">
-                <button 
-                    onClick={onLogout}
-                    className="text-gray-400 hover:text-red-400 transition-colors p-2"
-                    title="Log Out"
-                >
-                    <LogoutIcon className="w-5 h-5" />
+                 <button onClick={onBack} className="text-gray-400 hover:text-white transition-colors p-2 -ml-2">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 </button>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
-                    <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt="User" />
+                <div>
+                    <h1 className="text-xl font-bold text-white">Dashboard</h1>
+                    <p className="text-xs text-gray-400">Your Learning Hub</p>
                 </div>
             </div>
+            <button onClick={onLogout} className="text-gray-400 hover:text-red-400 transition-colors p-2" title="Log Out">
+                <LogoutIcon className="w-5 h-5" />
+            </button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto pt-8 px-4 space-y-8 animate-fade-in-up">
-        {/* Toggle */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Current Level" value={user.level} color="text-amber-400" />
+            <StatCard label="Daily Streak" value={`${user.streak} 🔥`} color="text-orange-400" />
+            <StatCard label="Total XP" value={user.xp} color="text-purple-400" />
+            <StatCard label="Sessions" value={user.completedSessionCount} color="text-blue-400" />
+        </div>
+
         <div className="flex p-1.5 bg-white/5 rounded-2xl w-full max-w-md mx-auto border border-white/5">
-            <button 
-                onClick={() => setActiveTab('speaking')} 
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'speaking' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
-            >
-                Speaking
-            </button>
-            <button 
-                onClick={() => setActiveTab('writing')} 
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'writing' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
-            >
-                Writing
-            </button>
-            <button 
-                onClick={() => setActiveTab('vocab')} 
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'vocab' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
-            >
-                Vocab
-            </button>
+            {['speaking', 'writing', 'vocab', 'achievements'].map(tab => (
+                <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab as Tab)} 
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 capitalize ${activeTab === tab ? 'bg-white/10 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                >
+                    {tab}
+                </button>
+            ))}
         </div>
 
         {activeTab === 'speaking' && (
-             <div className="space-y-8">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Total Sessions</div>
-                        <div className="text-2xl font-bold text-white">{speakingReports.length}</div>
-                    </div>
-                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Words Learned</div>
-                        <div className="text-2xl font-bold text-amber-400">{vocabList.length}</div>
-                    </div>
-                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Current Level</div>
-                        <div className="text-2xl font-bold text-pink-400">{speakingReports[speakingReports.length-1]?.cefrLevel || 'A1'}</div>
-                    </div>
-                    <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Avg Score</div>
-                        <div className="text-2xl font-bold text-blue-400">
-                            {speakingReports.length > 0 
-                                ? (speakingReports.reduce((acc, curr) => acc + curr.scores.overall, 0) / speakingReports.length).toFixed(1)
-                                : '0'}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-lg font-bold text-gray-200">Progress Trends</h2>
-                    </div>
-                    <ProgressChart data={speakingChartData} lines={speakingLines} />
-                    <p className="text-xs text-gray-500 text-center mt-4 italic">Chart tracks Overall Score (0-10) and CEFR Level estimate.</p>
-                </div>
-                
-                <h2 className="text-lg font-bold text-gray-300 px-2 uppercase tracking-wide text-xs">Recent Sessions</h2>
-                <div className="space-y-4">
-                    {speakingReports.length > 0 ? (
-                        speakingReports.slice().reverse().map(report => (
-                            <div key={report.id} className="bg-white/5 p-6 rounded-3xl flex justify-between items-center hover:bg-white/10 transition-all border border-white/5 group">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${report.scores.overall >= 7 ? 'bg-green-500 shadow-green-500/50' : 'bg-yellow-500'} shadow-[0_0_8px_rgba(34,197,94,0.6)]`}></div>
-                                        <span className="font-bold text-white text-lg">{new Date(report.date).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'})}</span>
-                                        {report.dialectUsed && <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/20">{report.dialectUsed}</span>}
-                                    </div>
-                                    <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors flex items-center gap-2">
-                                        <span>Level: {report.cefrLevel}</span>
-                                        <span className="w-1 h-1 rounded-full bg-gray-600"></span>
-                                        <span>{report.transcript.length} turns</span>
-                                    </p>
-                                </div>
-                                <div className="text-right bg-black/20 px-4 py-2 rounded-2xl border border-white/5">
-                                    <div className="text-2xl font-bold text-white">{report.scores.overall.toFixed(1)}</div>
-                                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Score</div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                            No speaking sessions recorded yet.
-                        </div>
-                    )}
-                </div>
+             <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+                <h2 className="text-lg font-bold text-gray-200 mb-8">Speaking Progress</h2>
+                <ProgressChart data={speakingChartData} lines={speakingLines} />
+                <p className="text-xs text-gray-500 text-center mt-4 italic">Chart tracks Overall Score (0-10) and CEFR Level estimate.</p>
             </div>
         )}
         
         {activeTab === 'writing' && (
-            <div className="space-y-8">
-                <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
-                    <div className="flex items-center justify-between mb-8">
-                         <h2 className="text-lg font-bold text-gray-200">Writing Trends</h2>
-                         <div className="text-right">
-                             <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
-                                {writingReports.length}
-                             </div>
-                             <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Docs Scanned</div>
-                        </div>
-                    </div>
-                    <ProgressChart data={writingChartData} lines={writingLines} />
-                </div>
-
-                <h2 className="text-lg font-bold text-gray-300 px-2 uppercase tracking-wide text-xs">History</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     {writingReports.length > 0 ? (
-                        writingReports.slice().reverse().map(report => (
-                            <div key={report.id} className="bg-white/5 p-5 rounded-3xl flex gap-5 hover:bg-white/10 transition-colors border border-white/5">
-                                <img src={report.imageUrl} alt="writing" className="w-24 h-24 object-cover rounded-2xl bg-gray-800 border border-white/10" />
-                                <div className="flex-1 flex flex-col justify-between py-1">
-                                    <div>
-                                        <p className="font-bold text-white mb-1">{new Date(report.date).toLocaleDateString()}</p>
-                                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed italic">"{report.transcribedText}"</p>
-                                    </div>
-                                    <div className="flex justify-between items-end mt-3">
-                                        <span className={`text-xs px-2 py-1 rounded-lg ${report.errors.length === 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                            {report.errors.length} corrections
-                                        </span>
-                                        <span className="text-xl font-bold text-white">{report.score}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                         <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                            No writing submissions yet.
-                        </div>
-                    )}
-                </div>
+            <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+                 <h2 className="text-lg font-bold text-gray-200 mb-8">Writing Progress</h2>
+                 <ProgressChart data={writingChartData} lines={writingLines} />
             </div>
         )}
 
-        {activeTab === 'vocab' && (
-            <div className="space-y-8 animate-fade-in-up">
-                <div className="glass-card p-8 rounded-[2rem] bg-gradient-to-br from-amber-900/30 to-orange-900/30">
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="p-3 bg-amber-500/20 rounded-full">
-                             <BookIcon className="w-6 h-6 text-amber-400" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-white">Your Wortschatz</h2>
-                    </div>
-                    <p className="text-gray-400">Words collected from your mistakes and conversations.</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {vocabList.length > 0 ? (
-                        vocabList.map((item, idx) => (
-                            <div key={idx} className="bg-[#1a1a1a] p-5 rounded-3xl border border-white/5 hover:border-amber-500/30 transition-all group hover:translate-y-[-2px]">
-                                <div className="flex justify-between items-start mb-3">
-                                    <h3 className="text-xl font-bold text-white">{item.word}</h3>
-                                    <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">DE</span>
-                                </div>
-                                <p className="text-gray-400 text-sm mb-4 italic">{item.translation}</p>
-                                <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                                    <p className="text-xs text-gray-300 leading-relaxed">"{item.context}"</p>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                         <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                            No vocabulary collected yet. Complete a speaking session to generate cards.
-                        </div>
-                    )}
-                </div>
-            </div>
-        )}
+        {activeTab === 'vocab' && <VocabularyDeck vocabList={vocabList} setVocabList={setVocabList} />}
+        {activeTab === 'achievements' && <AchievementsGrid unlockedIds={user.unlockedAchievements} />}
 
       </main>
     </div>
   );
 };
 
-export default ProgressPage;
+const StatCard: React.FC<{label: string, value: string|number, color: string}> = ({label, value, color}) => (
+    <div className="bg-black/20 p-4 rounded-2xl border border-white/5 text-center">
+        <div className={`text-3xl font-bold ${color}`}>{value}</div>
+        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mt-1">{label}</div>
+    </div>
+);
+
+const AchievementsGrid: React.FC<{unlockedIds: string[]}> = ({ unlockedIds }) => (
+    <div className="glass-card p-6 sm:p-8 rounded-[2rem]">
+        <h2 className="text-lg font-bold text-gray-200 mb-6">Your Awards</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {ALL_ACHIEVEMENTS.map(ach => {
+                const isUnlocked = unlockedIds.includes(ach.id);
+                return (
+                    <div key={ach.id} className={`p-4 rounded-2xl border transition-all duration-300 ${isUnlocked ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white/5 border-white/10 opacity-60'}`}>
+                        <div className={`text-4xl transition-transform duration-300 ${isUnlocked ? 'scale-100' : 'scale-90 grayscale'}`}>{ach.emoji}</div>
+                        <h3 className={`mt-2 font-bold ${isUnlocked ? 'text-amber-300' : 'text-gray-300'}`}>{ach.title}</h3>
+                        <p className="text-xs text-gray-400 mt-1">{ach.description}</p>
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+);
+
+const VocabularyDeck: React.FC<{vocabList: VocabularyItem[], setVocabList: Function}> = ({ vocabList, setVocabList }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isFlipped, setIsFlipped] = useState(false);
+    
+    if (vocabList.length === 0) {
+        return <div className="text-center py-16 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">No vocabulary collected yet. Complete a speaking session!</div>;
+    }
+
+    const currentWord = vocabList[currentIndex];
+
+    const handleNext = (status: 'learning' | 'mastered') => {
+        setVocabList((prev: VocabularyItem[]) => 
+            prev.map((item, index) => index === currentIndex ? { ...item, status } : item)
+        );
+        setIsFlipped(false);
+        setCurrentIndex((prev) => (prev + 1) % vocabList.length);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="relative w-full max-w-md mx-auto aspect-[3/2] cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
+                <div className={`absolute inset-0 transition-transform duration-500 rounded-2xl flex flex-col items-center justify-center p-6 text-center bg-[#1a1a1a] border border-white/10 shadow-2xl ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`} style={{ backfaceVisibility: 'hidden' }}>
+                     <span className="text-xs text-amber-400 font-bold">DEUTSCH</span>
+                     <h3 className="text-4xl font-bold text-white my-4">{currentWord.word}</h3>
+                     <p className="text-sm text-gray-400 italic">"{currentWord.context}"</p>
+                </div>
+                 <div className={`absolute inset-0 transition-transform duration-500 rounded-2xl flex items-center justify-center p-6 bg-green-900/40 border border-green-500/20 shadow-2xl ${isFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(-180deg)]'}`} style={{ backfaceVisibility: 'hidden' }}>
+                     <h3 className="text-4xl font-bold text-green-300">{currentWord.translation}</h3>
+                </div>
+            </div>
+            <div className="flex justify-center gap-4">
+                <button onClick={() => handleNext('learning')} className="px-8 py-4 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 font-bold hover:bg-red-500/30 transition-colors">Again</button>
+                <button onClick={() => handleNext('mastered')} className="px-8 py-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 font-bold hover:bg-green-500/30 transition-colors">Good</button>
+            </div>
+        </div>
+    );
+};
+
+export default DashboardPage;

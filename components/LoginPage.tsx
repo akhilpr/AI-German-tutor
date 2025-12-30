@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GoogleIcon } from './icons';
 import { User, UserTrack } from '../types';
@@ -18,13 +19,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             email: 'arjun.nair@example.com',
             photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4`,
             track: selectedTrack,
-            role: 'student'
+            role: 'student',
+            hasCompletedOnboarding: false,
+            // --- NEW: Initialize gamification state ---
+            xp: 0,
+            level: 1,
+            streak: 0,
+            lastSessionDate: null,
+            unlockedAchievements: [],
+            completedSessionCount: 0,
         };
         onLogin(dummyUser);
     }, 1200);
   };
 
-  // Hidden shortcut to login as a "Teacher" for demo purposes (Clicking the logo)
+  // Hidden shortcut to login as a "Teacher" for demo purposes
   const handleTeacherLogin = () => {
       setIsAnimating(true);
       setTimeout(() => {
@@ -33,7 +42,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               email: 'admin@institute.com',
               photoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=Zoey&backgroundColor=ffdfbf`,
               track: 'general',
-              role: 'teacher'
+              role: 'teacher',
+              hasCompletedOnboarding: true,
+              xp: 0, level: 1, streak: 0, lastSessionDate: null, unlockedAchievements: [], completedSessionCount: 0, // Default values
           };
           onLogin(dummyUser);
       }, 1000);
@@ -90,8 +101,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             >
                 <div className="text-xl sm:text-2xl">🌍</div>
                 <div className="text-left">
-                    <div className={`font-bold text-sm sm:text-base ${selectedTrack === 'general' ? 'text-white' : 'text-gray-300'}`}>General Learning</div>
-                    <div className="text-[10px] sm:text-xs text-gray-400">Travel, A1-B1 Basics, Hobby</div>
+                    <div className={`font-bold text-sm sm:text-base ${selectedTrack === 'general' ? 'text-white' : 'text-gray-300'}`}>Fluency Journey</div>
+                    <div className="text-[10px] sm:text-xs text-gray-400">Your personal path from beginner to fluent</div>
                 </div>
             </button>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { User, WritingReport } from '../types';
 import { getFeedbackOnWriting } from '../services/geminiService';
@@ -6,6 +7,7 @@ import { LoaderIcon, WritingIcon, LogoutIcon } from './icons';
 interface WritingPageProps {
   user: User;
   onLogout: () => void;
+  onBack: () => void;
 }
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -17,7 +19,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
+const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout, onBack }) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -65,25 +67,21 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
     }, [imageFile, imageUrl]);
     
     return (
-        <div className="flex flex-col h-full bg-transparent text-white pb-28">
+        <div className="flex flex-col h-full bg-transparent text-white pb-10">
             <header className="sticky top-0 z-20 backdrop-blur-xl border-b border-white/5 bg-black/40">
                 <div className="max-w-3xl mx-auto py-5 px-6 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">Writing Lab</h1>
-                        <p className="text-xs text-gray-400">Handwriting Analysis & Correction</p>
-                    </div>
                     <div className="flex items-center gap-4">
-                        <button 
-                            onClick={onLogout}
-                            className="text-gray-400 hover:text-red-400 transition-colors p-2"
-                            title="Log Out"
-                        >
-                            <LogoutIcon className="w-5 h-5" />
+                        <button onClick={onBack} className="text-gray-400 hover:text-white transition-colors p-2 -ml-2">
+                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         </button>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 p-0.5">
-                            <img className="h-full w-full rounded-full object-cover bg-black" src={user.photoUrl} alt={user.name} />
+                        <div>
+                            <h1 className="text-xl font-bold text-white tracking-tight">Writing Lab</h1>
+                            <p className="text-xs text-gray-400">Handwriting Analysis & Correction</p>
                         </div>
                     </div>
+                    <button onClick={onLogout} className="text-gray-400 hover:text-red-400 transition-colors p-2" title="Log Out">
+                        <LogoutIcon className="w-5 h-5" />
+                    </button>
                 </div>
             </header>
 
@@ -136,7 +134,6 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
                 
                 {report && (
                     <div className="space-y-8 pb-10 animate-fade-in-up">
-                        {/* Header Actions */}
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-white">Analysis Result</h2>
                             <button onClick={() => { setReport(null); setImageUrl(null); setImageFile(null);}} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-gray-300 transition-colors">
@@ -144,7 +141,6 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
                             </button>
                         </div>
 
-                        {/* Score Card */}
                         <div className="glass-card p-8 rounded-[2rem] relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-green-500/20 to-blue-500/20 blur-3xl rounded-full pointer-events-none"></div>
                              <div className="flex justify-between items-center relative z-10">
@@ -161,7 +157,6 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
                             </div>
                         </div>
 
-                        {/* Transcription */}
                         <div className="bg-white/5 border border-white/5 p-8 rounded-[2rem]">
                             <h3 className="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2 uppercase tracking-wide text-xs">
                                 Original Text
@@ -169,7 +164,6 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
                             <p className="text-xl font-medium text-white leading-relaxed font-serif">"{report.transcribedText}"</p>
                         </div>
 
-                        {/* Errors */}
                         <div>
                              <h3 className="text-lg font-bold text-gray-300 mb-5 flex items-center gap-2 uppercase tracking-wide text-xs">
                                 Corrections
@@ -209,7 +203,6 @@ const WritingPage: React.FC<WritingPageProps> = ({ user, onLogout }) => {
                              </div>
                         </div>
                         
-                        {/* Tips */}
                         <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-white/10 p-8 rounded-[2rem]">
                              <h3 className="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2 uppercase tracking-wide text-xs">
                                 Teacher's Notes

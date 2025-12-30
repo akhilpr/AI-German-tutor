@@ -37,7 +37,7 @@ export async function getFeedbackOnConversation(transcript: ConversationTurn[]):
 
     try {
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3-flash-preview",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -143,7 +143,7 @@ export async function getFeedbackOnWriting(imageBase64: string, mimeType: string
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3-flash-preview",
             contents: { parts: [imagePart, textPart] },
             config: {
                 responseMimeType: "application/json",
@@ -230,7 +230,7 @@ export async function generateDynamicExamTopic(track: 'nursing' | 'academic' | '
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3-flash-preview",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",

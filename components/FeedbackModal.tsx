@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { FeedbackReport, WordScore } from '../types';
 import { DownloadIcon, UserIcon, BotIcon, CertificateIcon } from './icons';
@@ -152,6 +153,20 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ report, onClose }) => {
         
         <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 pb-10">
             <div className="space-y-6">
+                {/* NEW: Session Rewards */}
+                <div className="p-5 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-2xl border border-purple-500/30 animate-fade-in-up">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-2">Session Rewards</h3>
+                    <div className="flex items-center justify-around text-center">
+                        <div className="flex items-center gap-3">
+                            <span className="text-4xl">✨</span>
+                            <div>
+                                <div className="text-2xl font-bold text-white">+{report.xpEarned}</div>
+                                <div className="text-xs uppercase font-bold text-gray-400 tracking-wider">XP Earned</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Scores */}
                 <div className="p-5 bg-black/40 rounded-2xl border border-white/10">
                     <h3 className="text-lg font-semibold text-gray-100 mb-4">Core Metrics</h3>
